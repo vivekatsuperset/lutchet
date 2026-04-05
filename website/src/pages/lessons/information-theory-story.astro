@@ -1,0 +1,434 @@
+---
+import LessonLayout from "../../layouts/LessonLayout.astro";
+import ProfileCard  from "../../components/ui/ProfileCard.astro";
+---
+
+<LessonLayout
+  title="Information Theory: The Story"
+  description="How Claude Shannon invented the mathematics of communication, told as a story, without the formulas."
+  subject="The Story"
+  lessonNumber={2}
+>
+
+<!-- ============================================================ S1: THE HOOK -->
+
+<section class="relative min-h-[60vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
+  <!-- Signal waveforms suggesting communication / noise -->
+  <div class="absolute inset-0 overflow-hidden opacity-[0.08]">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"
+         class="w-full h-full">
+      <!-- Clean signal (top) -->
+      <polyline
+        points="0,120 80,120 80,60 160,60 160,120 240,120 240,60 320,60 320,120 400,120 400,60 480,60 480,120 560,120 560,60 640,60 640,120 720,120 720,60 800,60 800,120 880,120 880,60 960,60 960,120 1040,120 1040,60 1120,60 1120,120 1200,120 1200,60 1280,60 1280,120 1400,120"
+        fill="none" stroke="#4a90e2" stroke-width="1.5"/>
+      <!-- Noisy/corrupted signal (middle) -->
+      <polyline
+        points="0,290 40,290 40,230 70,230 70,310 100,310 100,240 130,240 130,280 160,280 160,220 190,220 190,300 220,300 220,310 240,310 240,250 270,250 270,290 300,290 300,225 330,225 330,305 360,305 360,235 390,235 390,295 420,295 420,315 450,315 450,245 480,245 480,285 510,285 510,230 540,230 540,300 570,300 570,240 600,240 600,270 640,270 640,225 680,225 680,305 720,305 720,235 760,235 760,295 800,295 800,315 840,315 840,248 880,248 880,290 920,290 920,228 960,228 960,302 1000,302 1000,238 1040,238 1040,298 1080,298 1080,318 1120,318 1120,250 1160,250 1160,288 1200,288 1200,228 1240,228 1240,302 1280,302 1280,318 1400,318"
+        fill="none" stroke="#4a90e2" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <!-- Recovered signal (bottom) -->
+      <polyline
+        points="0,460 80,460 80,400 160,400 160,460 240,460 240,400 320,400 320,460 400,460 400,400 480,400 480,460 560,460 560,400 640,400 640,460 720,460 720,400 800,400 800,460 880,460 880,400 960,400 960,460 1040,460 1040,400 1120,400 1120,460 1200,460 1200,400 1280,400 1280,460 1400,460"
+        fill="none" stroke="#4a90e2" stroke-width="1.5"/>
+      <!-- Channel labels -->
+      <text x="20" y="50" font-family="monospace" font-size="9" fill="#4a90e2" opacity="0.7">SOURCE</text>
+      <text x="20" y="220" font-family="monospace" font-size="9" fill="#4a90e2" opacity="0.7">CHANNEL</text>
+      <text x="20" y="392" font-family="monospace" font-size="9" fill="#4a90e2" opacity="0.7">DECODED</text>
+      <!-- Vertical connectors suggesting transmission -->
+      <line x1="200" y1="130" x2="200" y2="220" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="600" y1="130" x2="600" y2="220" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="1000" y1="130" x2="1000" y2="220" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="200" y1="320" x2="200" y2="390" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="600" y1="320" x2="600" y2="390" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="1000" y1="320" x2="1000" y2="390" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-steel/60 tracking-widest mb-6">BELL LABS - MURRAY HILL, NEW JERSEY - 1943</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      The United States needed to send President Roosevelt's voice across
+      the Atlantic. In real time. Without the Nazis hearing a single word.
+      The problem required a new kind of mathematics, one that did not
+      yet exist.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      The question Claude Shannon had to answer first:
+      <span class="text-steel not-italic font-semibold"> what is information, exactly?</span>
+    </p>
+  </div>
+
+  <div class="mt-16 flex items-center gap-3 text-ivory-dim/40">
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+    <span class="text-xs font-sans tracking-widest uppercase">The story behind the mathematics</span>
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S2: THE PROBLEM -->
+
+<section class="bg-navy-medium py-16 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In 1943, Bell Labs was the most productive research institution in the world.
+      Its scientists had already invented the transistor, the solar cell, and information
+      coding techniques that underpinned the entire telephone network. Now the U.S.
+      military needed something far more difficult: a voice communication system so
+      secure that it could carry top-secret conversations between Allied commanders
+      across an ocean patrolled by submarines.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Claude Shannon, twenty-seven years old and already one of the most original
+      minds at Bell Labs, was assigned to the project. The result was
+      <strong class="text-steel">SIGSALY</strong>, a system that digitised the
+      human voice, encrypted each sample with a one-time key, and transmitted the result
+      as noise indistinguishable from static. It was the first perfectly secure voice
+      communication system ever built.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      But building SIGSALY forced Shannon to confront a deeper question. If you are
+      going to encrypt information, you need to know how much of it there is. If you
+      are going to transmit it over a noisy channel, you need to know the minimum rate
+      at which you can do so without loss. Neither question had a mathematical answer.
+      Shannon spent the next five years building one.
+    </p>
+
+    <div class="bg-steel/5 border border-steel/20 rounded-xl p-6 my-8">
+      <p class="font-sans text-xs text-steel/60 tracking-widest uppercase mb-3">A brief aside</p>
+      <p class="text-base text-ivory/80 leading-relaxed">
+        In September 1943, Alan Turing visited Bell Labs on a liaison mission from
+        Bletchley Park. He and Shannon ate lunch together in the Bell Labs cafeteria
+        several times. They discussed machines, communication, and what it would mean
+        for a machine to think. Neither left a detailed record of the conversations.
+        We know only that two years later, Shannon published a classified paper proving
+        mathematically why ciphers like Enigma could be broken, answering, in
+        a sense, the question Turing's Bombe had been implicitly asking.
+      </p>
+    </div>
+
+    <blockquote class="pullquote">
+      "Information is the resolution of uncertainty."
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">- Claude Shannon</footer>
+    </blockquote>
+  </div>
+</section>
+
+
+<!-- ============================================================ S3: THE PEOPLE -->
+
+<section class="py-16 px-8 md:px-20 bg-navy">
+  <div class="max-w-4xl mx-auto">
+    <p class="chapter-label">The people behind it</p>
+    <h2 class="text-3xl font-serif font-semibold text-ivory mb-10">Three figures you should know</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <ProfileCard
+        name="Claude Shannon"
+        years="1916 &ndash; 2001"
+        role="Mathematician &middot; Bell Labs"
+        bio="In a single paper, 'A Mathematical Theory of Communication' (1948), Shannon founded information theory, defined entropy, proved the source and channel coding theorems, and established the mathematical foundations for every digital communication system built since."
+        highlight="Shannon's 1948 paper is considered one of the most important scientific papers of the twentieth century. Its concepts underpin the internet, mobile phones, data compression, and modern AI."
+      />
+      <ProfileCard
+        name="David Huffman"
+        years="1925 &ndash; 1999"
+        role="Electrical Engineer &middot; MIT"
+        bio="As a graduate student in 1952, Huffman was given the choice of taking a final exam or finding an optimal prefix-free code. He found it instead. The Huffman coding algorithm reaches within 1 bit of Shannon's entropy lower bound and is still used in JPEG, MP3, and PDF compression today."
+        highlight="Huffman later said he likely would not have discovered the algorithm if he had not been racing against a deadline."
+      />
+      <ProfileCard
+        name="Richard Hamming"
+        years="1915 &ndash; 1998"
+        role="Mathematician &middot; Bell Labs"
+        bio="Shannon's colleague at Bell Labs. Invented error-correcting codes (Hamming codes) after becoming frustrated that the Bell Labs computer would stop and ring a bell when it hit an error on weekends, when no operator was present to restart it."
+        highlight="Hamming codes are still used in computer memory (ECC RAM). The principle extends to the Reed-Solomon codes that protect data on CDs, DVDs, and space probes."
+      />
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S4: WHAT IS INFORMATION? -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">The first insight</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">What Is Information?</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      The answer turns out to be: surprise.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Shannon's central insight sounds almost too simple: <strong class="text-steel">a message
+      is informative in proportion to how surprising it is.</strong> If you already knew
+      what the message would say, it tells you nothing. If it was completely unexpected,
+      it tells you a great deal.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Consider two events. A coin flip: could go either way. The sun rising tomorrow:
+      essentially guaranteed. If someone sends you a message telling you which side the
+      coin landed on, that message is genuinely informative: you couldn't have known
+      beforehand. If someone sends you a message telling you the sun rose, the message
+      carries almost no information at all. You already knew.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-10">
+      <div class="border border-ivory-dim/10 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-2">High surprise = high information</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          The coin came up heads. A fair coin could have gone either way.
+          Learning the outcome tells you something real.
+        </p>
+      </div>
+      <div class="border border-steel/20 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-2">No surprise = no information</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          The sun rose this morning. You knew it would. The message
+          resolves no uncertainty and carries no information.
+        </p>
+      </div>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Shannon called this quantity <strong class="text-steel">entropy</strong>, borrowing
+      the term from thermodynamics where it measures disorder. A source with high entropy
+      produces lots of surprise per message. A source with low entropy is predictable:
+      you can often guess what's coming next.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      English is a low-entropy language. If someone sends you the letters
+      <span class="font-mono text-steel">TH</span>, you can be fairly confident
+      the next letter is <span class="font-mono text-steel">E</span>. Q is almost
+      always followed by U. Sentences have structure. That structure means English
+      carries less information per letter than a truly random sequence of letters
+      would: about 4.1 bits per letter, compared to a theoretical maximum of 4.7.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">The connection to Enigma</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        The predictability of German military prose, its low entropy, is precisely
+        what made Enigma breakable. The patterns Shannon later measured mathematically
+        are the same patterns Turing exploited at Bletchley. A truly random key applied
+        to a truly random message would have been unbreakable. Neither the key nor the
+        message was truly random. The entropy gap was the vulnerability.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S5: COMPRESSION -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">The second insight</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Compression: Saying More with Less</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Frequent things should get short codes. Rare things can afford long ones.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      If English letters were equally common, you'd want to assign them all equal-length
+      codes. But they're not. E appears in roughly 13% of all English text. Z appears in
+      less than 0.1%. A code that gives E and Z the same length is wasting space,
+      paying the same price for a common event as for a rare one.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The smarter approach: give frequent letters short codes and rare letters long ones.
+      This is exactly what Morse code does. E gets a single dot. The most common letters
+      are the shortest. Rare letters like Q and Z get long sequences of dots and dashes.
+      Samuel Morse didn't derive this from a theorem: he counted letter frequencies in
+      a printer's type drawer. But the intuition was right.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In 1952, a graduate student named David Huffman proved you could find the
+      <em>optimal</em> assignment, the one that minimises average code length across
+      all letters, given their actual frequencies. His algorithm, now called Huffman
+      coding, builds a tree of decisions. The most common letter ends up at the shallowest
+      branch: short code. The rarest letter ends up at the deepest branch: long code.
+      The result is provably optimal.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The Huffman algorithm is still inside every JPEG image, every MP3 file, every PDF.
+      When you compress a document and it comes out smaller, some version of this idea
+      is almost certainly at work.
+    </p>
+
+    <blockquote class="pullquote">
+      Shannon proved something more fundamental: there is a floor. No matter how
+      clever your compression scheme, you cannot represent a source using fewer
+      bits than its entropy. You can approach it. You cannot beat it.
+    </blockquote>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      This is Shannon's source coding theorem. It is a limit, not a recipe.
+      It tells you the best you can ever do. Huffman coding gets within about
+      one bit per symbol of that limit. Modern algorithms like LZ77 and arithmetic
+      coding get closer still. But none of them can cross Shannon's floor.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S6: NOISY CHANNELS -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">The third insight</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Noisy Channels: Designing Around Error</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Errors are inevitable. Reliable communication is not.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Every communication channel introduces noise. A cable picks up electrical
+      interference. A radio signal weakens over distance. A satellite link crosses
+      200,000 miles of space. Bits get flipped. Before Shannon, engineers thought this
+      was a fundamental barrier: you could reduce errors by sending more slowly,
+      but you could never eliminate them.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The obvious workaround is repetition. If you're not sure your message arrived,
+      say it three times. If the recipient gets <span class="font-mono text-steel">1 1 0</span>,
+      two votes say 1, so they go with 1. The majority rules. This works: errors drop
+      dramatically, but it costs three times the bandwidth to send the same information.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Shannon proved something that shocked everyone who heard it. You do not need to
+      pay three-to-one. For any noisy channel, there exists a maximum rate, which he called
+      <strong class="text-steel">capacity</strong>, such that if you transmit
+      below that rate, you can make errors arbitrarily rare. Not small. Arbitrarily rare.
+      Approaching zero. Without slowing down to a crawl.
+    </p>
+
+    <div class="bg-steel/5 border border-steel/20 rounded-xl p-6 my-8">
+      <p class="font-sans text-xs text-steel/60 tracking-widest uppercase mb-3">What this means in plain language</p>
+      <p class="text-base text-ivory/80 leading-relaxed">
+        Imagine a telephone line that randomly garbles 10% of all bits. Shannon proved
+        that there is a specific rate, around 53% of the raw line speed, at which you
+        can transmit information with errors so rare they are negligible. Below that rate:
+        reliable. Above it: reliability collapses no matter what you do. The rate is fixed
+        by physics and mathematics, not by the cleverness of your engineering.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      His colleague Richard Hamming immediately went to work building codes that could
+      achieve this. Hamming codes use a small number of extra "parity" bits to detect
+      and correct errors. A handful of extra bits can protect a message far larger than
+      themselves: a much better exchange rate than repeating everything three times.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed">
+      Hamming codes are still in your computer's memory today. Every time ECC RAM
+      silently corrects a bit that was flipped by a stray cosmic ray, it is running
+      a version of the mathematics Hamming worked out in the Bell Labs cafeteria,
+      after getting frustrated that the computer kept stopping on weekends when no
+      one was there to restart it.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S7: THE LEGACY -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Where it lives now</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Legacy</h2>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Shannon published "A Mathematical Theory of Communication" in 1948. It is
+      55 pages long. In those 55 pages he invented a new scientific discipline,
+      proved its two central theorems, and laid the mathematical foundation for
+      everything that followed. The internet, JPEG, MP3, WiFi, 5G, satellite
+      communication, deep-space probes: all of them operate within limits
+      Shannon described in 1948.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The ideas have also migrated into artificial intelligence in ways Shannon
+      could not have anticipated. When you train a neural network, the core
+      operation is this: given what the network predicted, and what actually
+      happened, calculate how wrong it was. The standard way to measure that
+      wrongness is called <strong class="text-steel">cross-entropy loss</strong>.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In plain English: the network is trying to be less surprised by the data.
+      If it predicts that the next word in a sentence is probably "the", and the
+      next word turns out to be "the", the network is unsurprised, with low loss.
+      If it predicted "the" but the next word was "serendipity", the network
+      is very surprised, with high loss. Training pushes the network toward lower
+      surprise, which means better predictions.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Every large language model, every AI chatbot, every image generator,
+      every text autocomplete, is trained this way. Shannon's measure of
+      surprise is the error signal that shapes the model. The mathematics is
+      exactly what he wrote down in 1948.
+    </p>
+
+    <div class="bg-steel/5 border border-steel/20 rounded-xl p-6 my-8">
+      <p class="font-serif text-xl text-ivory leading-relaxed text-center">
+        Shannon did his work before transistors, before computers, before the internet.
+        He was measuring something so fundamental about the nature of communication
+        that the technology has changed a dozen times and the mathematics has not
+        needed to change at all.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed">
+      He spent his later years juggling in the Bell Labs hallways and riding a
+      unicycle. He built mechanical mice that could learn to navigate mazes.
+      He invested early in tech companies and became wealthy enough to stop worrying
+      about anything except what interested him. He died in 2001, having watched
+      the world he mathematically described be built, piece by piece, around him.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S8: GO DEEPER -->
+
+<section class="bg-navy-medium py-16 px-8 md:px-20">
+  <div class="max-w-2xl mx-auto text-center">
+    <p class="font-mono text-xs text-steel/60 tracking-widest uppercase mb-6">Go deeper</p>
+    <h2 class="font-serif text-3xl text-ivory mb-6">
+      Shannon's mathematics is beautiful, and within reach.
+    </h2>
+    <p class="text-lg text-ivory/70 leading-relaxed mb-10">
+      The technical lesson derives Shannon entropy from scratch, builds Huffman codes
+      in Python, simulates noisy channels, and connects it all to the cross-entropy
+      loss that trains modern AI. No prior knowledge required.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-6">
+      <a href="/lessons/information-theory"
+         class="inline-flex items-center gap-3 bg-steel/10 border border-steel/30 rounded-full px-8 py-3 font-sans text-sm text-steel hover:bg-steel/20 transition-all">
+        <span>Learn the mathematics</span>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+      <a href="https://github.com/vivekatsuperset/lutchet/tree/main/src/information_theory"
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-3 border border-ivory-dim/20 rounded-full px-8 py-3 font-sans text-sm text-ivory-dim/60 hover:border-ivory-dim/40 hover:text-ivory-dim/90 transition-all">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        <span>Explore the code</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</LessonLayout>

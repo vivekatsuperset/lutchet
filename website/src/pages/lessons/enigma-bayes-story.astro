@@ -1,0 +1,466 @@
+---
+import LessonLayout from "../../layouts/LessonLayout.astro";
+import ProfileCard  from "../../components/ui/ProfileCard.astro";
+---
+
+<LessonLayout
+  title="Bayes' Theorem: The Story"
+  description="How Alan Turing and the codebreakers of Bletchley Park broke the Enigma cipher, told as a story, without the mathematics."
+  subject="The Story"
+  lessonNumber={1}
+>
+
+<!-- =================================================================== S1: THE HOOK -->
+
+<section class="relative min-h-[60vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
+  <!-- Three Enigma rotor wheels -->
+  <div class="absolute inset-0 overflow-hidden opacity-[0.07]">
+    <svg viewBox="0 0 900 700" preserveAspectRatio="xMaxYMid meet" xmlns="http://www.w3.org/2000/svg"
+         class="absolute right-0 top-0 h-full w-auto">
+      <!-- Rotor I: rightmost -->
+      <g transform="translate(720,350)" stroke="#c8a44a" fill="none">
+        <circle r="240" stroke-width="1.5"/>
+        <circle r="200" stroke-width="0.6"/>
+        <circle r="155" stroke-width="0.4"/>
+        <circle r="62"  stroke-width="1"/>
+        <line x1="0" y1="-200" x2="0" y2="-240" stroke-width="1"/>
+        <line x1="47.8" y1="-194.3" x2="57.3" y2="-233.1" stroke-width="1"/>
+        <line x1="91.8" y1="-177.3" x2="110.2" y2="-212.7" stroke-width="1"/>
+        <line x1="129.4" y1="-150.0" x2="155.3" y2="-180.0" stroke-width="1"/>
+        <line x1="158.5" y1="-114.1" x2="190.3" y2="-136.9" stroke-width="1"/>
+        <line x1="177.2" y1="-72.1" x2="212.6" y2="-86.5" stroke-width="1"/>
+        <line x1="184.8" y1="-26.9" x2="221.8" y2="-32.3" stroke-width="1"/>
+        <line x1="181.2" y1="19.1" x2="217.4" y2="22.9" stroke-width="1"/>
+        <line x1="167.0" y1="63.3" x2="200.4" y2="76.0" stroke-width="1"/>
+        <line x1="143.2" y1="103.3" x2="171.8" y2="124.0" stroke-width="1"/>
+        <line x1="111.4" y1="137.6" x2="133.7" y2="165.1" stroke-width="1"/>
+        <line x1="73.4" y1="164.0" x2="88.1" y2="196.8" stroke-width="1"/>
+        <line x1="30.9" y1="181.2" x2="37.1" y2="217.4" stroke-width="1"/>
+        <line x1="-13.9" y1="199.5" x2="-16.7" y2="239.4" stroke-width="1"/>
+        <line x1="-57.7" y1="193.2" x2="-69.2" y2="231.8" stroke-width="1"/>
+        <line x1="-98.3" y1="173.6" x2="-118.0" y2="208.3" stroke-width="1"/>
+        <line x1="-133.0" y1="143.3" x2="-159.6" y2="172.0" stroke-width="1"/>
+        <line x1="-159.7" y1="104.5" x2="-191.6" y2="125.4" stroke-width="1"/>
+        <line x1="-176.8" y1="59.9" x2="-212.2" y2="71.9" stroke-width="1"/>
+        <line x1="-183.4" y1="13.0" x2="-220.1" y2="15.6" stroke-width="1"/>
+        <line x1="-179.2" y1="-34.0" x2="-215.0" y2="-40.8" stroke-width="1"/>
+        <line x1="-164.6" y1="-78.8" x2="-197.5" y2="-94.6" stroke-width="1"/>
+        <line x1="-140.5" y1="-118.8" x2="-168.6" y2="-142.6" stroke-width="1"/>
+        <line x1="-108.1" y1="-151.3" x2="-129.7" y2="-181.6" stroke-width="1"/>
+        <line x1="-69.5" y1="-174.6" x2="-83.4" y2="-209.5" stroke-width="1"/>
+        <line x1="-26.2" y1="-187.6" x2="-31.4" y2="-225.1" stroke-width="1"/>
+        <line x1="0" y1="-150" x2="54" y2="43" stroke-width="0.4" opacity="0.5"/>
+        <line x1="143" y1="-44" x2="-108" y2="-105" stroke-width="0.4" opacity="0.5"/>
+        <line x1="-150" y1="-20" x2="35" y2="151" stroke-width="0.4" opacity="0.5"/>
+        <line x1="-75" y1="135" x2="148" y2="40" stroke-width="0.4" opacity="0.5"/>
+        <line x1="100" y1="-115" x2="-130" y2="80" stroke-width="0.4" opacity="0.5"/>
+        <line x1="-50" y1="-148" x2="130" y2="90" stroke-width="0.4" opacity="0.5"/>
+      </g>
+      <!-- Rotor II: middle -->
+      <g transform="translate(430,350)" stroke="#c8a44a" fill="none">
+        <circle r="175" stroke-width="1.2"/>
+        <circle r="144" stroke-width="0.5"/>
+        <circle r="50"  stroke-width="0.8"/>
+        <line x1="0" y1="-144" x2="0" y2="-175" stroke-width="1"/>
+        <line x1="34.5" y1="-140.3" x2="41.9" y2="-170.4" stroke-width="1"/>
+        <line x1="66.4" y1="-128.8" x2="80.7" y2="-156.4" stroke-width="1"/>
+        <line x1="94.0" y1="-109.3" x2="114.1" y2="-132.7" stroke-width="1"/>
+        <line x1="115.3" y1="-83.7" x2="140.0" y2="-101.6" stroke-width="1"/>
+        <line x1="129.0" y1="-53.5" x2="156.7" y2="-65.0" stroke-width="1"/>
+        <line x1="134.8" y1="-20.3" x2="163.7" y2="-24.7" stroke-width="1"/>
+        <line x1="132.2" y1="13.9" x2="160.5" y2="16.9" stroke-width="1"/>
+        <line x1="121.4" y1="47.1" x2="147.5" y2="57.2" stroke-width="1"/>
+        <line x1="103.1" y1="77.2" x2="125.2" y2="93.7" stroke-width="1"/>
+        <line x1="78.4" y1="102.0" x2="95.2" y2="123.9" stroke-width="1"/>
+        <line x1="49.0" y1="120.5" x2="59.5" y2="146.3" stroke-width="1"/>
+        <line x1="16.5" y1="131.8" x2="20.0" y2="160.1" stroke-width="1"/>
+        <line x1="-17.5" y1="143.0" x2="-21.3" y2="173.7" stroke-width="1"/>
+        <line x1="-49.3" y1="132.2" x2="-59.9" y2="160.6" stroke-width="1"/>
+        <line x1="-78.3" y1="112.2" x2="-95.1" y2="136.3" stroke-width="1"/>
+        <line x1="-102.4" y1="84.4" x2="-124.5" y2="102.5" stroke-width="1"/>
+        <line x1="-119.7" y1="50.7" x2="  -145.4" y2="61.6" stroke-width="1"/>
+        <line x1="-129.5" y1="13.5" x2="-157.4" y2="16.4" stroke-width="1"/>
+        <line x1="-131.3" y1="-24.3" x2="-159.5" y2="-29.5" stroke-width="1"/>
+        <line x1="-125.0" y1="-61.2" x2="-151.9" y2="-74.3" stroke-width="1"/>
+        <line x1="-110.8" y1="-94.8" x2="-134.6" y2="-115.1" stroke-width="1"/>
+        <line x1="-89.4" y1="-122.5" x2="-108.6" y2="-148.8" stroke-width="1"/>
+        <line x1="-62.3" y1="-143.0" x2="-75.7" y2="-173.7" stroke-width="1"/>
+        <line x1="-31.1" y1="-155.8" x2="-37.8" y2="-189.3" stroke-width="1"/>
+        <line x1="-1.4" y1="-143.8" x2="-1.7" y2="-174.7" stroke-width="1"/>
+      </g>
+      <!-- Rotor III: leftmost, smaller -->
+      <g transform="translate(180,350)" stroke="#c8a44a" fill="none">
+        <circle r="118" stroke-width="1"/>
+        <circle r="96"  stroke-width="0.4"/>
+        <circle r="36"  stroke-width="0.7"/>
+        <line x1="0" y1="-96" x2="0" y2="-118" stroke-width="1"/>
+        <line x1="23.1" y1="-93.8" x2="28.4" y2="-115.3" stroke-width="1"/>
+        <line x1="44.7" y1="-85.6" x2="54.9" y2="-105.2" stroke-width="1"/>
+        <line x1="63.0" y1="-72.2" x2="77.5" y2="-88.8" stroke-width="1"/>
+        <line x1="76.9" y1="-55.0" x2="94.6" y2="-67.6" stroke-width="1"/>
+        <line x1="85.8" y1="-34.9" x2="105.5" y2="-42.9" stroke-width="1"/>
+        <line x1="89.5" y1="-13.0" x2="110.0" y2="-16.0" stroke-width="1"/>
+        <line x1="87.7" y1="9.4" x2="107.9" y2="11.6" stroke-width="1"/>
+        <line x1="80.5" y1="31.3" x2="99.0" y2="38.5" stroke-width="1"/>
+        <line x1="68.3" y1="50.9" x2="84.0" y2="62.6" stroke-width="1"/>
+        <line x1="51.9" y1="67.5" x2="63.8" y2="83.0" stroke-width="1"/>
+        <line x1="32.2" y1="80.0" x2="39.6" y2="98.4" stroke-width="1"/>
+        <line x1="10.4" y1="87.9" x2="12.8" y2="108.1" stroke-width="1"/>
+        <line x1="-12.5" y1="95.2" x2="-15.4" y2="117.1" stroke-width="1"/>
+        <line x1="-34.4" y1="90.1" x2="-42.3" y2="110.9" stroke-width="1"/>
+        <line x1="-54.2" y1="78.4" x2="-66.7" y2="96.5" stroke-width="1"/>
+        <line x1="-70.9" y1="61.3" x2="-87.2" y2="75.4" stroke-width="1"/>
+        <line x1="-83.0" y1="40.1" x2="-102.1" y2="49.3" stroke-width="1"/>
+        <line x1="-90.3" y1="16.5" x2="-111.1" y2="20.3" stroke-width="1"/>
+        <line x1="-92.4" y1="-8.3" x2="-113.7" y2="-10.2" stroke-width="1"/>
+        <line x1="-89.4" y1="-33.1" x2="-109.9" y2="-40.7" stroke-width="1"/>
+        <line x1="-81.3" y1="-56.5" x2="-100.0" y2="-69.5" stroke-width="1"/>
+        <line x1="-68.5" y1="-77.3" x2="-84.3" y2="-95.1" stroke-width="1"/>
+        <line x1="-51.7" y1="-94.1" x2="-63.6" y2="-115.8" stroke-width="1"/>
+        <line x1="-31.8" y1="-106.8" x2="-39.1" y2="-131.4" stroke-width="1"/>
+        <line x1="-9.3" y1="-95.7" x2="-11.4" y2="-117.7" stroke-width="1"/>
+      </g>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-amber/50 tracking-widest mb-6">BLETCHLEY PARK - HEREFORDSHIRE, ENGLAND - 1941</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      Every morning a stack of intercepted messages arrived. Thousands of
+      letters. Meaningless. The men and women of Hut 8 had eighteen hours
+      to find the needle, before midnight reset the haystack.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      The haystack contained approximately
+      <span class="text-amber not-italic font-semibold">10&sup2;&sup3;</span> possible configurations.
+    </p>
+  </div>
+
+  <div class="mt-16 flex items-center gap-3 text-ivory-dim/40">
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+    <span class="text-xs font-sans tracking-widest uppercase">The story behind the mathematics</span>
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S2: THE STAKES -->
+
+<section class="bg-navy-medium py-16 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The Battle of the Atlantic was the longest continuous military campaign
+      of World War II. German U-boats, guided by encrypted radio traffic, were
+      sinking Allied convoys faster than they could be replaced. Winston Churchill
+      later wrote that the only thing that ever truly frightened him was the U-boat peril.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Every tactical order, every fleet position, every weather report was encrypted
+      on the <strong class="text-amber">Enigma machine</strong>, a device the
+      German high command believed to be mathematically unbreakable. They were right
+      that brute force would fail. They were wrong about everything else.
+    </p>
+    <blockquote class="pullquote">
+      "The Enigma was not broken by brilliance alone. It was broken by the
+      systematic application of a 178-year-old theorem about conditional probability."
+    </blockquote>
+  </div>
+</section>
+
+
+<!-- ============================================================ S3: THE PEOPLE -->
+
+<section class="py-16 px-8 md:px-20 bg-navy">
+  <div class="max-w-4xl mx-auto">
+    <p class="chapter-label">The people who broke it</p>
+    <h2 class="text-3xl font-serif font-semibold text-ivory mb-10">Five figures you should know</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <ProfileCard
+        name="Alan Turing"
+        years="1912 &ndash; 1954"
+        role="Mathematician &middot; Head of Hut 8"
+        bio="Led the effort to break Naval Enigma. Designed the Bombe machine. Independently invented sequential Bayesian inference, calling it Banburismus, years before it appeared in the academic statistics literature."
+        highlight="The weight-of-evidence framework Turing built at Bletchley is now a cornerstone of modern statistical inference."
+      />
+      <ProfileCard
+        name="Joan Clarke"
+        years="1917 &ndash; 1996"
+        role="Cryptanalyst &middot; Deputy head of Hut 8"
+        bio="One of the finest cryptanalysts at Bletchley Park. Worked directly alongside Turing breaking Naval Enigma. Despite outperforming many of her male colleagues, she was officially graded as a 'linguist', the only category that permitted a woman to be paid at her level."
+        highlight="Turing argued personally for her promotion and later said she was indispensable to the work of Hut 8."
+      />
+      <ProfileCard
+        name="I.J. Good"
+        years="1916 &ndash; 2009"
+        role="Statistician &middot; Turing's assistant at Hut 8"
+        bio="Worked directly alongside Turing on Banburismus. After the war, he was the first to publish a rigorous account of Turing's Bayesian methods. Later pioneered Bayesian analysis in academic statistics."
+        highlight="Introduced the term 'weight of evidence' and formalized the deciban framework that Turing used informally."
+      />
+      <ProfileCard
+        name="Hugh Alexander"
+        years="1909 &ndash; 1974"
+        role="Cryptanalyst &middot; Head of Hut 8 from 1942"
+        bio="Two-time British chess champion who became one of the most effective operational cryptanalysts of the war. Succeeded Turing as head of Hut 8 and led the day-to-day breaking of Naval Enigma for the rest of the war. Later headed cryptanalysis at GCHQ."
+        highlight="While Turing built the theory and the tools, Alexander ran the operation, turning mathematical methods into military intelligence under daily deadline pressure."
+      />
+      <ProfileCard
+        name="Gordon Welchman"
+        years="1906 &ndash; 1985"
+        role="Mathematician &middot; Head of Hut 6"
+        bio="Broke Army and Air Force Enigma. Invented the 'diagonal board', a crucial enhancement to the Bombe that made operational codebreaking possible at scale."
+        highlight="Without Welchman's diagonal board, the Bombe would have been too slow to be operationally useful."
+      />
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S4: THE MACHINE -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">How it worked</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Machine</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Why brute force was impossible, and what the codebreakers could exploit
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      An Enigma machine looks like a typewriter. Press a key and a lamp lights up
+      somewhere else on the keyboard: that is the encrypted letter. The path the
+      signal takes depends on three things fitted into the machine:
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-10">
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-amber mb-2">Rotors</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Three rotors chosen from a set of five, each wired to scramble the
+          alphabet differently. They step forward with every keypress: the
+          rightmost turns on every letter, the middle turns when the right
+          notch is reached, the left turns more rarely. Like an odometer,
+          but for substitution ciphers.
+        </p>
+      </div>
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-amber mb-2">Reflector</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          After passing through the three rotors, the signal hits a fixed
+          reflector that bounces it back through all three rotors again along
+          a different path. This is what makes Enigma self-reciprocal: the
+          same settings encrypt and decrypt. It also means a letter can
+          <em>never</em> encrypt to itself. The fatal flaw.
+        </p>
+      </div>
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-amber mb-2">Plugboard</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Before and after the rotors, the signal passes through a plugboard
+          that swaps 10 pairs of letters. The plugboard alone contributes
+          more than 150 trillion configurations, the majority of Enigma's
+          total keyspace.
+        </p>
+      </div>
+    </div>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Settings reset at midnight</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Each day, every Enigma operator in the German military received a
+      printed settings sheet specifying which rotors to use, what ring
+      settings to apply, and which 10 pairs of letters to connect on the
+      plugboard. At midnight, the sheet changed. Every break Hut 8 achieved
+      expired in eighteen hours. The work started over the next morning.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The combined effect of rotor choice, rotor order, starting positions,
+      ring settings, and plugboard wiring produces roughly
+      <strong class="text-amber">10&sup2;&sup3; possible configurations</strong>.
+      A machine checking one setting per microsecond would take longer than
+      the age of the universe to exhaust them all. Brute force was never an option.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">The aha moment: "Heil Hitler"</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      German operators were required to end every operational message with
+      <span class="font-mono text-amber">HEIL HITLER</span>. The codebreakers
+      knew this. Aligned against the last eleven letters of the ciphertext,
+      those eleven known plaintext letters became a <strong class="text-ivory">crib</strong>:
+      a suspected piece of plaintext at a known position.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Here is what made the crib devastating: because Enigma's reflector means
+      a letter can never encrypt to itself, any setting where
+      <span class="font-mono text-amber">H</span> maps to
+      <span class="font-mono text-amber">H</span>,
+      <span class="font-mono text-amber">E</span> maps to
+      <span class="font-mono text-amber">E</span>, or any other
+      crib letter maps to itself is immediately, provably impossible.
+      An eleven-character crib typically eliminated more than 99% of all
+      candidate settings before a single probability had been calculated.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">The constraint in one sentence</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        For a candidate setting to survive, no letter in the crib may align
+        with the same letter in the ciphertext. This is not a heuristic:
+        it is an absolute consequence of the reflector's design. Settings
+        that violate it are immediately ruled out.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S5: THE INSIGHT -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">The breakthrough</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Insight</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Not searching the haystack. Making most of it disappear.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      After the crib eliminated more than 99% of settings, what remained was a much
+      smaller list, still large by human standards, but small enough to reason about
+      systematically. The question shifted from "which of 10&sup2;&sup3; is correct?"
+      to "which of these surviving candidates looks most like German?"
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Turing's method was this: for each surviving candidate setting, decrypt the
+      message and ask how natural the result looks. German military prose uses letters
+      in predictable patterns: E appears far more often than Q, common digrams like
+      EN and ER appear far more often than rare ones. A setting that produces natural-looking
+      German is far more likely to be correct than one that produces gibberish.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Each new intercepted message provided more evidence. With every letter examined,
+      the probabilities shifted. Plausible settings became more plausible; implausible
+      ones collapsed toward zero. Evidence accumulated, and the answer converged.
+    </p>
+
+    <blockquote class="pullquote">
+      "They didn't search the haystack. They made most of it disappear."
+    </blockquote>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Turing called his scoring unit a <strong class="text-amber">deciban</strong>,
+      named after the bans of Banbury, where the paper sheets used in the procedure
+      were manufactured. Every piece of evidence added or subtracted from a running
+      score. When a setting's score fell far enough below the leader, it was ruled out.
+      When one setting pulled far enough ahead, the operators had their answer.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      He did not know, working in a requisitioned Victorian mansion in Herefordshire,
+      that he was independently re-inventing a theorem first published by Thomas Bayes
+      in 1763. The mathematics was 178 years old. The application was entirely new.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">Why this works without a formula</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        The core logic is intuitive: start with every possibility being equally likely.
+        As you gather evidence, update your confidence in each one. Evidence that
+        strongly favors a candidate pushes it up. Evidence that strongly contradicts
+        it pushes it down. Keep going until one candidate is far enough ahead that
+        you are willing to bet on it. That is Bayesian inference.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S6: THE OUTCOME -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">What happened next</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Outcome</h2>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Historians estimate that breaking Enigma shortened the war in Europe by two to
+      four years. The intelligence produced at Bletchley Park, codenamed Ultra, guided
+      Allied commanders at El Alamein, D-Day, and the Battle of the Atlantic. Churchill
+      called the codebreakers his "geese that laid the golden eggs and never cackled."
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Turing's Bombe, the electromechanical machine he built to automate the crib-based
+      elimination process, became something remarkable: a machine designed to run through
+      logical possibilities at mechanical speed, guided by rules encoded into its
+      wiring. It was not a computer in the modern sense. But it pointed toward one.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      After the war, Turing published his famous paper asking "Can a machine think?"
+      He proposed the test that now bears his name. The conceptual lineage is direct:
+      from Hut 8 to the Bombe to the stored-program computer to the question of
+      machine intelligence. Every AI system running today is, in a sense, a distant
+      descendant of the work done in that cold, damp hut in Herefordshire.
+    </p>
+
+    <div class="bg-amber/5 border border-amber/20 rounded-xl p-6 my-8">
+      <p class="font-serif text-xl text-ivory leading-relaxed text-center">
+        The work was classified until 1974. Turing himself never received public recognition
+        for what he had done. He died in 1954. The world did not learn the full story
+        for another twenty years.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The Bayesian method Turing used did not stay classified. It re-entered academic
+      statistics through the postwar work of his colleagues and became, over the following
+      decades, the dominant framework for reasoning under uncertainty. It is the foundation
+      of spam filters, medical diagnosis, and the probabilistic models at the heart of
+      modern machine learning.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed">
+      A 178-year-old theorem. A Victorian mansion in Hertfordshire. Eighteen hours a day,
+      every day, for four years. The mathematics was not what saved the Allies, the people
+      were. But without the mathematics, the people would have had nothing to work with.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S7: GO DEEPER -->
+
+<section class="bg-navy-medium py-16 px-8 md:px-20">
+  <div class="max-w-2xl mx-auto text-center">
+    <p class="font-mono text-xs text-amber/60 tracking-widest uppercase mb-6">Go deeper</p>
+    <h2 class="font-serif text-3xl text-ivory mb-6">
+      The mathematics behind this story is remarkable, and learnable.
+    </h2>
+    <p class="text-lg text-ivory/70 leading-relaxed mb-10">
+      The technical lesson derives Bayes' theorem from first principles, applies it
+      to a Caesar cipher, then builds up to the full Enigma decoder in Python. No
+      prior knowledge of probability required.
+    </p>
+    <div class="flex flex-wrap items-center justify-center gap-6">
+      <a href="/lessons/enigma-bayes"
+         class="inline-flex items-center gap-3 bg-amber/10 border border-amber/40 rounded-full px-8 py-3 font-sans text-sm text-amber hover:bg-amber/20 transition-all">
+        <span>Learn the mathematics</span>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+      <a href="https://github.com/vivekatsuperset/lutchet/tree/main/src/enigma_bayes"
+         target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-3 border border-ivory-dim/20 rounded-full px-8 py-3 font-sans text-sm text-ivory-dim/60 hover:border-ivory-dim/40 hover:text-ivory-dim/90 transition-all">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+        <span>Explore the code</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+</LessonLayout>
