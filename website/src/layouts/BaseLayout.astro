@@ -1,0 +1,29 @@
+---
+import "../styles/global.css";
+import "katex/dist/katex.min.css";
+
+export interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Mathematics & Computer Science Through Stories",
+  description = "Mathematics and computer science taught through real problems that changed history.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <title>{title}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  </head>
+  <body class="bg-navy text-ivory font-serif">
+    <slot />
+  </body>
+</html>

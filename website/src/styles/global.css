@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-navy text-ivory font-serif antialiased; }
+  code, pre { @apply font-mono; }
+}
+
+@layer components {
+  .math-display {
+    @apply overflow-x-auto py-4 px-4 text-center my-4
+           border-y border-ivory-dim/10;
+  }
+  .math-inline {
+    @apply inline;
+  }
+
+  /* KaTeX overrides for dark theme */
+  .katex { color: inherit; }
+
+  /* Narrative section transitions */
+  .section-narrative {
+    @apply relative py-20 px-6 md:px-16 lg:px-32;
+  }
+  .section-bright {
+    @apply bg-navy-medium;
+  }
+
+  /* Pull-quote styling */
+  .pullquote {
+    @apply border-l-4 border-amber pl-6 my-8 italic text-xl text-ivory-dim;
+  }
+
+  /* Chapter label */
+  .chapter-label {
+    @apply text-amber text-sm font-sans tracking-[0.2em] uppercase mb-3 block;
+  }
+
+  /* Code block wrapper */
+  .code-panel {
+    @apply rounded-lg overflow-hidden border border-navy-light my-6;
+  }
+  .code-panel-header {
+    @apply bg-navy-light px-4 py-2 text-xs text-ivory-dim font-mono flex items-center justify-between;
+  }
+
+  /* Callout box */
+  .callout {
+    @apply rounded-lg border border-amber/30 bg-amber/5 p-5 my-6;
+  }
+  .callout-title {
+    @apply text-amber font-sans font-semibold text-sm mb-2;
+  }
+}

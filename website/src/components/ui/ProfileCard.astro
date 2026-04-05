@@ -1,0 +1,21 @@
+---
+export interface Props {
+  name: string;
+  years: string;
+  role: string;
+  bio: string;
+  highlight: string;
+}
+const { name, years, role, bio, highlight } = Astro.props;
+---
+<div class="rounded-xl border border-ivory-dim/10 bg-navy-light p-6 flex flex-col gap-3">
+  <div>
+    <p class="font-serif text-2xl font-semibold text-ivory">{name}</p>
+    <p class="font-mono text-sm text-ivory-dim/60 mt-0.5">{years}</p>
+  </div>
+  <p class="font-sans text-sm text-amber tracking-wide uppercase">{role}</p>
+  <p class="text-base text-ivory/80 leading-relaxed font-sans">{bio}</p>
+  <div class="mt-auto pt-3 border-t border-ivory-dim/10">
+    <p class="text-sm italic text-ivory/70 leading-relaxed">"{highlight}"</p>
+  </div>
+</div>

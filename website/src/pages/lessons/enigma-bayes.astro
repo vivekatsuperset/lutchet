@@ -1,0 +1,712 @@
+---
+import { Code } from "astro/components";
+import LessonLayout  from "../../layouts/LessonLayout.astro";
+import Math          from "../../components/ui/Math.astro";
+import ProfileCard   from "../../components/ui/ProfileCard.astro";
+import IntuitionDiagram from "../../components/interactive/IntuitionDiagram";
+import CaesarBayesDemo  from "../../components/interactive/CaesarBayesDemo";
+import PosteriorSlider  from "../../components/interactive/PosteriorSlider";
+import BayesViz         from "../../components/interactive/BayesViz";
+import EnigmaDemo       from "../../components/interactive/EnigmaDemo";
+
+const CODE_A = `import numpy as np
+
+# English letter frequencies (A=0 ... Z=25)
+ENG_FREQ = np.array([
+    0.082, 0.015, 0.028, 0.043, 0.127, 0.022, 0.020, 0.061,
+    0.070, 0.002, 0.008, 0.040, 0.024, 0.067, 0.075, 0.019,
+    0.001, 0.060, 0.063, 0.091, 0.028, 0.010, 0.024, 0.002,
+    0.020, 0.001,
+])
+
+def bayesian_update(prior: np.ndarray, likelihoods: np.ndarray) -> np.ndarray:
+    """One step of Bayes: posterior = (likelihoods * prior) / sum."""
+    unnormalised = likelihoods * prior
+    return unnormalised / unnormalised.sum()
+
+# -- Caesar cipher example --------------------------------------------------
+# Intercepted: "KHOOR" (= "HELLO" encrypted with shift 3).
+# Hypotheses: shift in {0, 1, ..., 25}. Prior: uniform.
+
+prior = np.ones(26) / 26
+
+for cipher_letter in "KHOOR":
+    c = ord(cipher_letter) - ord("A")
+    # P(cipher_letter | shift=k) = English freq of the decrypted letter
+    likelihoods = ENG_FREQ[[(c - k) % 26 for k in range(26)]]
+    prior = bayesian_update(prior, likelihoods)
+
+best_shift = prior.argmax()
+print(f"Most probable shift: {best_shift}")   # -> 3
+print(f"Decrypts to: {''.join(chr((ord(c)-ord('A')-best_shift)%26+ord('A')) for c in 'KHOOR')}")  # -> HELLO
+`;
+const CODE_B = `import math
+
+def to_decibans(likelihood_ratio: float) -> float:
+    """Turing's unit: 10 * log10(likelihood ratio)."""
+    return 10 * math.log10(likelihood_ratio)
+
+def banburismus(ciphertext: str) -> list[float]:
+    """
+    Sequential Bayesian updating in log-odds (decibans).
+    Returns the deciban score for each of the 26 possible Caesar shifts.
+    Addition, not multiplication -- that is Turing's key insight.
+    """
+    N = 26
+    # Prior: uniform -> log-odds = log10(1/25) for each shift
+    log_odds = [math.log10(1 / (N - 1))] * N
+
+    for cipher_letter in ciphertext.upper():
+        c = ord(cipher_letter) - ord("A")
+        for shift in range(N):
+            plain = (c - shift) % 26
+            p_given_H     = ENG_FREQ[plain]
+            p_given_not_H = 1 / N
+            # ADD decibans -- not multiply probabilities
+            log_odds[shift] += to_decibans(p_given_H / p_given_not_H)
+
+    return log_odds
+
+scores = banburismus("KHOOR")
+best   = max(range(26), key=lambda k: scores[k])
+print(f"Highest score: shift {best} ({scores[best]:.1f} decibans)")  # -> shift 3
+`;
+const CODE_C = `from src.enigma.machine import EnigmaMachine, EnigmaConfig
+from src.bayes.decoder  import BayesianDecoder
+
+# The message -- encrypted with unknown settings.
+# Operators opened every weather report with "WETTER": the perfect crib.
+CIPHERTEXT = "ABCXYZPQRLMNOPQDEFGHIJKSTUVWRST"   # replace with real intercept
+
+# Decoder: search rotors I-III, all 26^3 positions, fixed reflector UKW-B
+decoder = BayesianDecoder(rotor_choices=["I", "II", "III"])
+
+# Run: Enigma constraint eliminates >99% instantly, Bayesian scoring resolves the rest
+results = decoder.decode(CIPHERTEXT, crib="WETTER", top_n=5, verbose=True)
+
+# Best result
+print(results[0].decrypted)          # -> most probable plaintext
+print(results[0].config.rotors)      # -> recovered rotor order
+print(results[0].window)             # -> recovered starting positions
+`;
+---
+
+<LessonLayout
+  title="Bayes' Theorem"
+  description="How Alan Turing used Bayes' Theorem to break the Enigma cipher and save the Allies."
+  subject="Probability Theory · Python"
+  lessonNumber={1}
+>
+
+<!-- =================================================================== S1: THE HOOK -->
+
+<section class="relative min-h-screen flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-40">
+  <!-- Three Enigma rotor wheels -->
+  <div class="absolute inset-0 overflow-hidden opacity-[0.07]">
+    <svg viewBox="0 0 900 700" preserveAspectRatio="xMaxYMid meet" xmlns="http://www.w3.org/2000/svg"
+         class="absolute right-0 top-0 h-full w-auto">
+      <!-- Rotor I: rightmost -->
+      <g transform="translate(720,350)" stroke="#c8a44a" fill="none">
+        <circle r="240" stroke-width="1.5"/>
+        <circle r="200" stroke-width="0.6"/>
+        <circle r="155" stroke-width="0.4"/>
+        <circle r="62"  stroke-width="1"/>
+        <!-- 26 tick marks, pre-computed at 13.85° intervals -->
+        <line x1="0" y1="-200" x2="0" y2="-240" stroke-width="1"/>
+        <line x1="47.8" y1="-194.3" x2="57.3" y2="-233.1" stroke-width="1"/>
+        <line x1="91.8" y1="-177.3" x2="110.2" y2="-212.7" stroke-width="1"/>
+        <line x1="129.4" y1="-150.0" x2="155.3" y2="-180.0" stroke-width="1"/>
+        <line x1="158.5" y1="-114.1" x2="190.3" y2="-136.9" stroke-width="1"/>
+        <line x1="177.2" y1="-72.1" x2="212.6" y2="-86.5" stroke-width="1"/>
+        <line x1="184.8" y1="-26.9" x2="221.8" y2="-32.3" stroke-width="1"/>
+        <line x1="181.2" y1="19.1" x2="217.4" y2="22.9" stroke-width="1"/>
+        <line x1="167.0" y1="63.3" x2="200.4" y2="76.0" stroke-width="1"/>
+        <line x1="143.2" y1="103.3" x2="171.8" y2="124.0" stroke-width="1"/>
+        <line x1="111.4" y1="137.6" x2="133.7" y2="165.1" stroke-width="1"/>
+        <line x1="73.4" y1="164.0" x2="88.1" y2="196.8" stroke-width="1"/>
+        <line x1="30.9" y1="181.2" x2="37.1" y2="217.4" stroke-width="1"/>
+        <line x1="-13.9" y1="199.5" x2="-16.7" y2="239.4" stroke-width="1"/>
+        <line x1="-57.7" y1="193.2" x2="-69.2" y2="231.8" stroke-width="1"/>
+        <line x1="-98.3" y1="173.6" x2="-118.0" y2="208.3" stroke-width="1"/>
+        <line x1="-133.0" y1="143.3" x2="-159.6" y2="172.0" stroke-width="1"/>
+        <line x1="-159.7" y1="104.5" x2="-191.6" y2="125.4" stroke-width="1"/>
+        <line x1="-176.8" y1="59.9" x2="-212.2" y2="71.9" stroke-width="1"/>
+        <line x1="-183.4" y1="13.0" x2="-220.1" y2="15.6" stroke-width="1"/>
+        <line x1="-179.2" y1="-34.0" x2="-215.0" y2="-40.8" stroke-width="1"/>
+        <line x1="-164.6" y1="-78.8" x2="-197.5" y2="-94.6" stroke-width="1"/>
+        <line x1="-140.5" y1="-118.8" x2="-168.6" y2="-142.6" stroke-width="1"/>
+        <line x1="-108.1" y1="-151.3" x2="-129.7" y2="-181.6" stroke-width="1"/>
+        <line x1="-69.5" y1="-174.6" x2="-83.4" y2="-209.5" stroke-width="1"/>
+        <line x1="-26.2" y1="-187.6" x2="-31.4" y2="-225.1" stroke-width="1"/>
+        <!-- Internal wiring spokes -->
+        <line x1="0" y1="-150" x2="54" y2="43" stroke-width="0.4" opacity="0.5"/>
+        <line x1="143" y1="-44" x2="-108" y2="-105" stroke-width="0.4" opacity="0.5"/>
+        <line x1="-150" y1="-20" x2="35" y2="151" stroke-width="0.4" opacity="0.5"/>
+        <line x1="-75" y1="135" x2="148" y2="40" stroke-width="0.4" opacity="0.5"/>
+        <line x1="100" y1="-115" x2="-130" y2="80" stroke-width="0.4" opacity="0.5"/>
+        <line x1="-50" y1="-148" x2="130" y2="90" stroke-width="0.4" opacity="0.5"/>
+      </g>
+      <!-- Rotor II: middle -->
+      <g transform="translate(430,350)" stroke="#c8a44a" fill="none">
+        <circle r="175" stroke-width="1.2"/>
+        <circle r="144" stroke-width="0.5"/>
+        <circle r="50"  stroke-width="0.8"/>
+        <line x1="0" y1="-144" x2="0" y2="-175" stroke-width="1"/>
+        <line x1="34.5" y1="-140.3" x2="41.9" y2="-170.4" stroke-width="1"/>
+        <line x1="66.4" y1="-128.8" x2="80.7" y2="-156.4" stroke-width="1"/>
+        <line x1="94.0" y1="-109.3" x2="114.1" y2="-132.7" stroke-width="1"/>
+        <line x1="115.3" y1="-83.7" x2="140.0" y2="-101.6" stroke-width="1"/>
+        <line x1="129.0" y1="-53.5" x2="156.7" y2="-65.0" stroke-width="1"/>
+        <line x1="134.8" y1="-20.3" x2="163.7" y2="-24.7" stroke-width="1"/>
+        <line x1="132.2" y1="13.9" x2="160.5" y2="16.9" stroke-width="1"/>
+        <line x1="121.4" y1="47.1" x2="147.5" y2="57.2" stroke-width="1"/>
+        <line x1="103.1" y1="77.2" x2="125.2" y2="93.7" stroke-width="1"/>
+        <line x1="78.4" y1="102.0" x2="95.2" y2="123.9" stroke-width="1"/>
+        <line x1="49.0" y1="120.5" x2="59.5" y2="146.3" stroke-width="1"/>
+        <line x1="16.5" y1="131.8" x2="20.0" y2="160.1" stroke-width="1"/>
+        <line x1="-17.5" y1="143.0" x2="-21.3" y2="173.7" stroke-width="1"/>
+        <line x1="-49.3" y1="132.2" x2="-59.9" y2="160.6" stroke-width="1"/>
+        <line x1="-78.3" y1="112.2" x2="-95.1" y2="136.3" stroke-width="1"/>
+        <line x1="-102.4" y1="84.4" x2="-124.5" y2="102.5" stroke-width="1"/>
+        <line x1="-119.7" y1="50.7" x2="  -145.4" y2="61.6" stroke-width="1"/>
+        <line x1="-129.5" y1="13.5" x2="-157.4" y2="16.4" stroke-width="1"/>
+        <line x1="-131.3" y1="-24.3" x2="-159.5" y2="-29.5" stroke-width="1"/>
+        <line x1="-125.0" y1="-61.2" x2="-151.9" y2="-74.3" stroke-width="1"/>
+        <line x1="-110.8" y1="-94.8" x2="-134.6" y2="-115.1" stroke-width="1"/>
+        <line x1="-89.4" y1="-122.5" x2="-108.6" y2="-148.8" stroke-width="1"/>
+        <line x1="-62.3" y1="-143.0" x2="-75.7" y2="-173.7" stroke-width="1"/>
+        <line x1="-31.1" y1="-155.8" x2="-37.8" y2="-189.3" stroke-width="1"/>
+        <line x1="-1.4" y1="-143.8" x2="-1.7" y2="-174.7" stroke-width="1"/>
+      </g>
+      <!-- Rotor III: leftmost, smaller -->
+      <g transform="translate(180,350)" stroke="#c8a44a" fill="none">
+        <circle r="118" stroke-width="1"/>
+        <circle r="96"  stroke-width="0.4"/>
+        <circle r="36"  stroke-width="0.7"/>
+        <line x1="0" y1="-96" x2="0" y2="-118" stroke-width="1"/>
+        <line x1="23.1" y1="-93.8" x2="28.4" y2="-115.3" stroke-width="1"/>
+        <line x1="44.7" y1="-85.6" x2="54.9" y2="-105.2" stroke-width="1"/>
+        <line x1="63.0" y1="-72.2" x2="77.5" y2="-88.8" stroke-width="1"/>
+        <line x1="76.9" y1="-55.0" x2="94.6" y2="-67.6" stroke-width="1"/>
+        <line x1="85.8" y1="-34.9" x2="105.5" y2="-42.9" stroke-width="1"/>
+        <line x1="89.5" y1="-13.0" x2="110.0" y2="-16.0" stroke-width="1"/>
+        <line x1="87.7" y1="9.4" x2="107.9" y2="11.6" stroke-width="1"/>
+        <line x1="80.5" y1="31.3" x2="99.0" y2="38.5" stroke-width="1"/>
+        <line x1="68.3" y1="50.9" x2="84.0" y2="62.6" stroke-width="1"/>
+        <line x1="51.9" y1="67.5" x2="63.8" y2="83.0" stroke-width="1"/>
+        <line x1="32.2" y1="80.0" x2="39.6" y2="98.4" stroke-width="1"/>
+        <line x1="10.4" y1="87.9" x2="12.8" y2="108.1" stroke-width="1"/>
+        <line x1="-12.5" y1="95.2" x2="-15.4" y2="117.1" stroke-width="1"/>
+        <line x1="-34.4" y1="90.1" x2="-42.3" y2="110.9" stroke-width="1"/>
+        <line x1="-54.2" y1="78.4" x2="-66.7" y2="96.5" stroke-width="1"/>
+        <line x1="-70.9" y1="61.3" x2="-87.2" y2="75.4" stroke-width="1"/>
+        <line x1="-83.0" y1="40.1" x2="-102.1" y2="49.3" stroke-width="1"/>
+        <line x1="-90.3" y1="16.5" x2="-111.1" y2="20.3" stroke-width="1"/>
+        <line x1="-92.4" y1="-8.3" x2="-113.7" y2="-10.2" stroke-width="1"/>
+        <line x1="-89.4" y1="-33.1" x2="-109.9" y2="-40.7" stroke-width="1"/>
+        <line x1="-81.3" y1="-56.5" x2="-100.0" y2="-69.5" stroke-width="1"/>
+        <line x1="-68.5" y1="-77.3" x2="-84.3" y2="-95.1" stroke-width="1"/>
+        <line x1="-51.7" y1="-94.1" x2="-63.6" y2="-115.8" stroke-width="1"/>
+        <line x1="-31.8" y1="-106.8" x2="-39.1" y2="-131.4" stroke-width="1"/>
+        <line x1="-9.3" y1="-95.7" x2="-11.4" y2="-117.7" stroke-width="1"/>
+      </g>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-amber/50 tracking-widest mb-6">BLETCHLEY PARK &mdash; HEREFORDSHIRE, ENGLAND &mdash; 1941</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      Every morning a stack of intercepted messages arrived. Thousands of
+      letters. Meaningless. The men and women of Hut 8 had eighteen hours
+      to find the needle &mdash; before midnight reset the haystack.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      The haystack contained approximately
+      <span class="text-amber not-italic font-semibold">10&sup2;&sup3;</span> possible configurations.
+    </p>
+  </div>
+
+  <div class="mt-16 flex items-center gap-3 text-ivory-dim/40">
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+    <span class="text-xs font-sans tracking-widest uppercase">A lesson in mathematics and code</span>
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+  </div>
+</section>
+
+<section class="bg-navy-medium py-16 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The Battle of the Atlantic was the longest continuous military campaign
+      of World War II. German U-boats, guided by encrypted radio traffic, were
+      sinking Allied convoys faster than they could be replaced. Winston Churchill
+      later wrote that the only thing that ever truly frightened him was the U-boat peril.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Every tactical order, every fleet position, every weather report was encrypted
+      on the <strong class="text-amber">Enigma machine</strong> &mdash; a device the
+      German high command believed to be mathematically unbreakable. They were right
+      that brute force would fail. They were wrong about everything else.
+    </p>
+    <blockquote class="pullquote">
+      "The Enigma was not broken by brilliance alone. It was broken by the
+      systematic application of a 178-year-old theorem about conditional probability."
+    </blockquote>
+  </div>
+</section>
+
+<section class="py-16 px-8 md:px-20 bg-navy">
+  <div class="max-w-4xl mx-auto">
+    <p class="chapter-label">The people who broke it</p>
+    <h2 class="text-3xl font-serif font-semibold text-ivory mb-10">Five figures you should know</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <ProfileCard
+        name="Alan Turing"
+        years="1912 &ndash; 1954"
+        role="Mathematician &middot; Head of Hut 8"
+        bio="Led the effort to break Naval Enigma. Designed the Bombe machine. Independently invented sequential Bayesian inference &mdash; calling it Banburismus &mdash; years before it appeared in the academic statistics literature."
+        highlight="The weight-of-evidence framework Turing built at Bletchley is now a cornerstone of modern statistical inference."
+      />
+      <ProfileCard
+        name="Joan Clarke"
+        years="1917 &ndash; 1996"
+        role="Cryptanalyst &middot; Deputy head of Hut 8"
+        bio="One of the finest cryptanalysts at Bletchley Park. Worked directly alongside Turing breaking Naval Enigma. Despite outperforming many of her male colleagues, she was officially graded as a 'linguist' &mdash; the only category that permitted a woman to be paid at her level."
+        highlight="Turing argued personally for her promotion and later said she was indispensable to the work of Hut 8."
+      />
+      <ProfileCard
+        name="I.J. Good"
+        years="1916 &ndash; 2009"
+        role="Statistician &middot; Turing's assistant at Hut 8"
+        bio="Worked directly alongside Turing on Banburismus. After the war, he was the first to publish a rigorous account of Turing's Bayesian methods. Later pioneered Bayesian analysis in academic statistics."
+        highlight="Introduced the term 'weight of evidence' and formalized the deciban framework that Turing used informally."
+      />
+      <ProfileCard
+        name="Hugh Alexander"
+        years="1909 &ndash; 1974"
+        role="Cryptanalyst &middot; Head of Hut 8 from 1942"
+        bio="Two-time British chess champion who became one of the most effective operational cryptanalysts of the war. Succeeded Turing as head of Hut 8 and led the day-to-day breaking of Naval Enigma for the rest of the war. Later headed cryptanalysis at GCHQ."
+        highlight="While Turing built the theory and the tools, Alexander ran the operation &mdash; turning mathematical methods into military intelligence under daily deadline pressure."
+      />
+      <ProfileCard
+        name="Gordon Welchman"
+        years="1906 &ndash; 1985"
+        role="Mathematician &middot; Head of Hut 6"
+        bio="Broke Army and Air Force Enigma. Invented the 'diagonal board' &mdash; a crucial enhancement to the Bombe that made operational codebreaking possible at scale."
+        highlight="Without Welchman's diagonal board, the Bombe would have been too slow to be operationally useful."
+      />
+    </div>
+  </div>
+</section>
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-2xl mx-auto text-center">
+    <p class="font-serif text-3xl md:text-4xl text-ivory leading-tight mb-6">
+      How do you find a needle in a haystack when the haystack contains
+      <span class="text-amber">a hundred sextillion</span> pieces of hay?
+    </p>
+    <p class="text-ivory-dim text-lg">
+      You don't search it. You eliminate it &mdash; using evidence and probability.
+    </p>
+  </div>
+</section>
+
+
+<!-- ================================================================ S2: THE MATH PROBLEM -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 2</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Math Problem</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Reframing codebreaking as a question about probability &mdash; before writing a single formula
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Here is the precise question the codebreakers faced each morning:
+    </p>
+
+    <div class="bg-amber/5 border border-amber/30 rounded-xl p-6 my-8">
+      <p class="font-serif text-xl text-ivory text-center leading-relaxed">
+        &ldquo;Given this intercepted ciphertext, what is the
+        <span class="text-amber">probability</span>
+        that each possible Enigma setting produced it?&rdquo;
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      That is a question of <strong class="text-amber">posterior probability</strong>.
+      It has three ingredients:
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-10">
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory mb-1">Prior</p>
+        <p class="font-mono text-xs text-amber mb-3">P(setting)</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">How plausible is each setting before we see the message? With no information: all equally likely.</p>
+      </div>
+      <div class="border border-steel/40 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory mb-1">Likelihood</p>
+        <p class="font-mono text-xs text-steel mb-3">P(message | setting)</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">If this setting were correct, how probable is the message we observed?</p>
+      </div>
+      <div class="border border-amber/40 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory mb-1">Posterior</p>
+        <p class="font-mono text-xs text-amber mb-3">P(setting | message)</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">After seeing the message: updated probability that this setting is correct.</p>
+      </div>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      Before we write a formula, let's build the intuition. Each square below
+      represents a candidate Enigma setting.
+    </p>
+
+    <IntuitionDiagram client:load />
+  </div>
+</section>
+
+
+<!-- =========================================================== S3: BAYES FORMALLY -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 3</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Bayes' Theorem</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Derived from the Enigma problem &mdash; then proven on a simpler cipher
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-5">Deriving the Formula</h3>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The probability that both a setting <em>H</em> is correct and we observe
+      message <em>E</em> can be written two ways using the product rule:
+    </p>
+
+    <div class="math-display my-6 text-ivory">
+      <Math formula={String.raw`P(H \cap E) = P(E \mid H)\cdot P(H) = P(H \mid E)\cdot P(E)`} display={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Since both expressions equal the same thing, divide both sides
+      by <Math formula={String.raw`P(E)`} />:
+    </p>
+
+    <div class="bg-amber/5 border-2 border-amber/40 rounded-xl p-8 my-8 text-center">
+      <p class="text-xs text-amber font-sans tracking-widest uppercase mb-4">Bayes' Theorem</p>
+      <Math formula={String.raw`P(H \mid E) = \frac{P(E \mid H)\cdot P(H)}{P(E)}`} display={true} />
+      <p class="text-xs text-ivory-dim/60 mt-4 font-sans">
+        where <Math formula={String.raw`P(E) = \sum_i P(E \mid H_i)\cdot P(H_i)`} /> sums over all hypotheses
+      </p>
+    </div>
+
+    <div class="overflow-x-auto mb-10">
+      <table class="w-full text-sm font-sans border-collapse">
+        <thead>
+          <tr class="border-b border-ivory-dim/20">
+            <th class="text-left py-3 pr-6 text-amber font-semibold">Term</th>
+            <th class="text-left py-3 pr-6 text-amber font-semibold">Name</th>
+            <th class="text-left py-3 text-amber font-semibold">In our problem</th>
+          </tr>
+        </thead>
+        <tbody class="text-ivory/80">
+          {[
+            ["P(H)", "Prior", "Uniform — all possible settings equally likely before any evidence"],
+            ["P(E | H)", "Likelihood", "If this setting is correct, how probable is the observed ciphertext?"],
+            ["P(H | E)", "Posterior", "Updated probability after seeing the ciphertext"],
+            ["P(E)", "Normaliser", "Total probability summed across all hypotheses (makes it sum to 1)"],
+          ].map(([term, name, meaning]) => (
+            <tr class="border-b border-ivory-dim/10">
+              <td class="py-3 pr-6 font-mono text-amber text-xs">{term}</td>
+              <td class="py-3 pr-6 font-semibold">{name}</td>
+              <td class="py-3 text-ivory-dim text-xs">{meaning}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Worked Example: Caesar Cipher</h3>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Enigma is too complex to trace by hand. Let's first prove the theorem
+      works on something you can follow letter by letter: a
+      <strong class="text-amber">Caesar cipher</strong>, where the keyspace is
+      just 26 possible shifts.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      We intercept <span class="font-mono text-amber">"KHOOR"</span>. We suspect it's
+      English. We know nothing else. Click through the letters and watch the posterior
+      converge on the correct shift.
+    </p>
+
+    <CaesarBayesDemo client:load />
+
+    <h3 class="text-2xl font-serif text-amber mb-4 mt-12">
+      How Prior and Likelihood Shape the Posterior
+    </h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The formula has two inputs you control: how strongly you believed the
+      hypothesis before, and how decisively the evidence favours it.
+    </p>
+
+    <PosteriorSlider client:load />
+  </div>
+</section>
+
+
+<!-- ================================================================ S4: BANBURISMUS -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 4</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Banburismus</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Turing's sequential extension &mdash; and the invention of the ban
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The Caesar demo showed Bayesian updating with 26 hypotheses. Enigma has 10&sup2;&sup3;.
+      Turing needed to combine many small pieces of evidence without multiplying
+      chains of vanishingly small probabilities.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      His solution: work in <strong class="text-amber">log-odds</strong>.
+      In odds form, Bayesian updating is:
+    </p>
+
+    <div class="math-display my-6 text-ivory">
+      <Math formula={String.raw`\Omega_1 = \Lambda \times \Omega_0`} display={true} />
+      <div class="flex justify-center gap-8 mt-3 text-xs font-sans text-ivory-dim/70">
+        <span><span class="text-amber font-mono">Ω₁</span> = posterior odds</span>
+        <span><span class="text-steel font-mono">Λ</span> = likelihood ratio P(E|H) / P(E|¬H)</span>
+        <span><span class="text-ivory/60 font-mono">Ω₀</span> = prior odds</span>
+      </div>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Taking <Math formula={String.raw`\log_{10}`} /> of both sides:
+    </p>
+
+    <div class="bg-amber/5 border border-amber/30 rounded-xl p-6 my-6 text-center">
+      <Math formula={String.raw`\log_{10}\Omega_1 = \log_{10}\Lambda + \log_{10}\Omega_0`} display={true} />
+      <p class="text-sm text-ivory-dim mt-3">
+        Multiplication becomes addition. Each piece of evidence adds to the tally.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Turing called the unit a <strong class="text-amber">ban</strong> (named after
+      Banbury, where the scoring sheets were printed). One ban = <Math formula={String.raw`\log_{10}(10)`} /> &mdash;
+      a factor of 10 in the odds. A <strong class="text-amber">deciban</strong> is
+      one-tenth of a ban. When a setting's tally crossed
+      <strong class="text-amber">30 decibans</strong> (3 bans = 1000:1 odds), the team
+      accepted it. Watch that process below:
+    </p>
+
+    <BayesViz client:load />
+
+    <div class="callout mt-8">
+      <p class="callout-title">What Banburismus actually was</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Banburismus was the specific procedure for determining which day-key was used
+        for Naval Enigma by comparing pairs of messages sent on the same settings.
+        Each shared letter added decibans to the score. When the tally crossed the
+        threshold, the result was fed into the Bombe. I.J. Good described it in 1979
+        as "the first serious application of sequential Bayesian analysis to a real problem."
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================= S5: PYTHON -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 5</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python &mdash; Build It</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      From the maths to working code &mdash; three parts, progressively deeper
+    </p>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part A: The Core Formula</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Bayes' theorem in two lines of NumPy, applied letter-by-letter to crack
+        the Caesar cipher from Section 3.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>bayes_caesar.py</span>
+          <span class="text-amber/60">Notebook 02</span>
+        </div>
+        <Code code={CODE_A} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part B: Banburismus in Code</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Now in log-odds (decibans). Each letter <em>adds</em> to the score.
+        This is exactly Turing's insight, translated into Python.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>banburismus.py</span>
+          <span class="text-amber/60">Notebook 02 &rarr; 03</span>
+        </div>
+        <Code code={CODE_B} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part C: Full Enigma Simulation</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Real Enigma machine, real rotor search, crib-dragging with constraint
+        elimination. The Enigma machine below lets you generate ciphertext to
+        feed into the decoder.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>decoder_demo.py</span>
+          <span class="text-amber/60">Notebook 03</span>
+        </div>
+        <Code code={CODE_C} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="border-t border-ivory-dim/10 pt-10 mb-10">
+      <h3 class="text-xl font-serif text-ivory mb-2">The Machine &mdash; Live in Your Browser</h3>
+      <p class="text-sm text-ivory-dim mb-6">
+        Encrypt something, then paste the ciphertext into Notebook 03 and watch
+        the Bayesian decoder recover the settings.
+      </p>
+      <EnigmaDemo client:load />
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-4 mb-6">
+      {[
+        { num: "01", title: "The Enigma Machine", desc: "Build all components from scratch. Verify with real test cases." },
+        { num: "02", title: "Bayes' Theorem",     desc: "Derive, simulate, visualise. Caesar and Enigma worked examples." },
+        { num: "03", title: "Cracking Enigma",    desc: "Run the Bayesian decoder. Watch the posterior collapse." },
+      ].map(({ num, title, desc }) => (
+        <div class="border border-ivory-dim/10 rounded-lg p-4">
+          <p class="font-mono text-amber text-xs mb-1">Notebook {num}</p>
+          <p class="font-sans font-semibold text-ivory text-sm mb-2">{title}</p>
+          <p class="text-xs text-ivory-dim leading-relaxed">{desc}</p>
+        </div>
+      ))}
+    </div>
+    <div class="bg-navy rounded-xl p-5 font-mono text-sm">
+      <p class="text-ivory-dim/50 mb-2"># Get started</p>
+      <p class="text-ivory"><span class="text-amber">$</span> git clone https://github.com/vivekatsuperset/lutchet</p>
+      <p class="text-ivory"><span class="text-amber">$</span> uv sync && uv run jupyter lab</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S6: ADVANCED -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 6 &mdash; Advanced</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Going Deeper</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      For undergrads: numerical stability, information theory, and why this is everywhere in modern ML
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Why Log-Odds? Numerical Stability</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      Enigma's prior probability for any single setting is about <Math formula={String.raw`10^{-23}`} />.
+      Multiplying 30 such numbers together produces values that underflow to zero in
+      floating-point arithmetic. Working in log-odds &mdash; where we <em>add</em> instead
+      of multiply &mdash; sidesteps this entirely. This is why modern machine learning
+      frameworks compute log-probabilities by default.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Connection to Information Theory</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Claude Shannon published his theory of information in 1948 &mdash; eight years after
+      Turing built the ban system. The two frameworks measure the same thing in different units:
+    </p>
+    <div class="overflow-x-auto mb-10">
+      <table class="w-full text-sm font-sans border-collapse">
+        <thead>
+          <tr class="border-b border-ivory-dim/20">
+            <th class="text-left py-3 pr-6 text-amber font-semibold">Turing (1940)</th>
+            <th class="text-left py-3 text-amber font-semibold">Shannon (1948)</th>
+          </tr>
+        </thead>
+        <tbody class="text-ivory/80">
+          {[
+            ["1 ban = log10(10)", "~3.32 bits of information"],
+            ["Decibans of evidence", "Bits of mutual information"],
+            ["Prior log-odds to posterior log-odds", "Entropy reduction H(X) to H(X|E)"],
+            ["30-deciban threshold", "~10 bits to identify 1 in 10^23 settings"],
+          ].map(([t, s]) => (
+            <tr class="border-b border-ivory-dim/10">
+              <td class="py-2.5 pr-6 font-mono text-xs text-amber">{t}</td>
+              <td class="py-2.5 font-mono text-xs text-steel">{s}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">The Modern Descendants</h3>
+    <div class="grid sm:grid-cols-2 gap-4 mb-8">
+      {[
+        { name: "Naive Bayes Classifier", b: "Score each Enigma setting by multiplying per-letter likelihoods", m: "Spam filters, text classification — same per-word likelihood multiplication" },
+        { name: "Logistic Regression",    b: "Turing's deciban tally: additive log-likelihood scores", m: "The logit function is log-odds. Learning is adding log-likelihoods." },
+        { name: "Sequential Testing",     b: "Add evidence until 3-ban threshold — then accept", m: "A/B testing with early stopping. SPRT (Wald 1945) was directly inspired by Banburismus." },
+        { name: "Language Models",        b: "P(next letter | rotor setting and position)", m: "P(next token | all previous tokens) — Bayesian language modelling at scale" },
+      ].map(({ name, b, m }) => (
+        <div class="border border-ivory-dim/10 rounded-lg p-5">
+          <p class="font-sans font-semibold text-ivory text-base mb-3">{name}</p>
+          <p class="font-sans text-sm text-amber mb-1" set:html={"Bletchley: <span class='text-ivory/80 font-normal'>" + b + "</span>"} />
+          <p class="font-sans text-sm text-steel" set:html={"Today: <span class='text-ivory/80 font-normal'>" + m + "</span>"} />
+        </div>
+      ))}
+    </div>
+
+    <div class="border border-ivory-dim/10 rounded-lg p-5 flex items-start gap-4">
+      <div class="text-2xl">&#128211;</div>
+      <div>
+        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 04 &mdash; Advanced Topics</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          Log-odds in depth, sequential Bayesian updating, Shannon entropy, KL divergence,
+          and implementing a Naive Bayes language classifier that descends directly from Turing's methods.
+        </p>
+        <code class="text-sm font-mono text-amber mt-2 block">notebooks/04_advanced.ipynb</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ================================================================== EPILOGUE -->
+
+<section class="bg-navy-medium py-24 px-8 md:px-20 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="font-serif text-3xl text-ivory leading-relaxed mb-8">
+      Thomas Bayes died in 1761. Alan Turing died in 1954.
+      Neither lived to see their ideas recognised as two expressions of the same truth.
+    </p>
+    <blockquote class="pullquote text-left">
+      "Sometimes it is the people no one imagines anything of who do the things
+      that no one can imagine."
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">&mdash; Alan Turing</footer>
+    </blockquote>
+    <p class="text-ivory-dim text-base mt-8 leading-relaxed">
+      The theorem on your syllabus, the unit in Turing's notebook, the weights in
+      a modern neural network &mdash; they are the same idea, found independently,
+      by people trying to reason carefully under uncertainty.
+    </p>
+  </div>
+</section>
+
+</LessonLayout>

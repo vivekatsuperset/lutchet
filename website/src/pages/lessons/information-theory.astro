@@ -1,0 +1,770 @@
+---
+import { Code } from "astro/components";
+import LessonLayout     from "../../layouts/LessonLayout.astro";
+import Math             from "../../components/ui/Math.astro";
+import ProfileCard      from "../../components/ui/ProfileCard.astro";
+import EntropyCalculator from "../../components/interactive/EntropyCalculator";
+import HuffmanViz       from "../../components/interactive/HuffmanViz";
+
+const CODE_A = `import math
+from collections import Counter
+
+def entropy(text: str) -> float:
+    """Shannon entropy in bits per symbol."""
+    text = text.upper()
+    text = [c for c in text if c.isalpha()]
+    if not text:
+        return 0.0
+    n = len(text)
+    counts = Counter(text)
+    return -sum((c / n) * math.log2(c / n) for c in counts.values())
+
+# English prose
+print(f"English:  {entropy('the quick brown fox jumps over the lazy dog'):.3f} bits")  # ~4.1
+
+# Random-looking
+print(f"Random:   {entropy('xkqzjvbwpyfuhmolcnrsdtigea'):.3f} bits")                   # ~4.7
+
+# Highly repetitive
+print(f"AAAA...:  {entropy('A' * 50):.3f} bits")                                        # 0.0
+`;
+
+const CODE_B = `import heapq
+from dataclasses import dataclass, field
+from typing import Optional
+
+@dataclass(order=True)
+class HuffNode:
+    freq: float
+    symbol: Optional[str] = field(compare=False, default=None)
+    left:  Optional["HuffNode"] = field(compare=False, default=None)
+    right: Optional["HuffNode"] = field(compare=False, default=None)
+
+def build_tree(freqs: dict[str, float]) -> HuffNode:
+    heap = [HuffNode(freq=f, symbol=s) for s, f in freqs.items()]
+    heapq.heapify(heap)
+    while len(heap) > 1:
+        lo, hi = heapq.heappop(heap), heapq.heappop(heap)
+        heapq.heappush(heap, HuffNode(freq=lo.freq + hi.freq, left=lo, right=hi))
+    return heap[0]
+
+def build_codes(node: HuffNode, prefix="", codes=None) -> dict[str, str]:
+    if codes is None:
+        codes = {}
+    if node.symbol is not None:
+        codes[node.symbol] = prefix or "0"
+    else:
+        build_codes(node.left,  prefix + "0", codes)
+        build_codes(node.right, prefix + "1", codes)
+    return codes
+
+# English letter frequencies (%)
+ENG = {"E":12.7,"T":9.1,"A":8.2,"O":7.5,"I":7.0,"N":6.7,"S":6.3,"H":6.1,
+       "R":6.0,"D":4.3,"L":4.0,"C":2.8,"U":2.8,"M":2.4,"W":2.4,"F":2.2}
+
+tree  = build_tree(ENG)
+codes = build_codes(tree)
+
+# Average code length
+total = sum(ENG.values())
+avg_len = sum((f / total) * len(codes[s]) for s, f in ENG.items())
+print(f"Avg code length: {avg_len:.3f} bits/letter")   # -> ~3.94
+print(f"Entropy floor:   {entropy_from_freqs(ENG):.3f} bits/letter")   # -> ~3.93
+`;
+
+const CODE_C = `import random
+
+def bsc_channel(bits: list[int], error_rate: float) -> list[int]:
+    """Binary Symmetric Channel: flip each bit with probability error_rate."""
+    return [b ^ (1 if random.random() < error_rate else 0) for b in bits]
+
+def encode_repetition(bits: list[int], n: int = 3) -> list[int]:
+    """Repetition code: send each bit n times."""
+    return [b for b in bits for _ in range(n)]
+
+def decode_repetition(received: list[int], n: int = 3) -> list[int]:
+    """Majority vote over each group of n bits."""
+    decoded = []
+    for i in range(0, len(received), n):
+        block = received[i:i+n]
+        decoded.append(1 if sum(block) > n // 2 else 0)
+    return decoded
+
+# Simulate: 100 bits at 10% error rate
+message = [random.randint(0, 1) for _ in range(100)]
+
+# Raw channel
+received_raw   = bsc_channel(message, error_rate=0.10)
+raw_errors     = sum(a != b for a, b in zip(message, received_raw))
+
+# With rate-1/3 repetition code
+encoded        = encode_repetition(message, n=3)
+received_coded = bsc_channel(encoded, error_rate=0.10)
+decoded        = decode_repetition(received_coded, n=3)
+coded_errors   = sum(a != b for a, b in zip(message, decoded))
+
+print(f"Without coding: {raw_errors}/100 bit errors")
+print(f"With repetition code: {coded_errors}/100 bit errors")
+
+# Shannon's theorem: capacity of BSC with p=0.10
+p = 0.10
+capacity = 1 + p * math.log2(p) + (1-p) * math.log2(1-p)
+print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.5310
+`;
+---
+
+<LessonLayout
+  title="Information Theory"
+  description="How Claude Shannon invented the mathematics of communication — and why every AI system uses it today."
+  subject="Information Theory · Python"
+  lessonNumber={2}
+>
+
+<!-- ============================================================ S1: THE HOOK -->
+
+<section class="relative min-h-screen flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-40">
+  <!-- Signal waveforms suggesting communication / noise -->
+  <div class="absolute inset-0 overflow-hidden opacity-[0.08]">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"
+         class="w-full h-full">
+      <!-- Clean signal (top) -->
+      <polyline
+        points="0,120 80,120 80,60 160,60 160,120 240,120 240,60 320,60 320,120 400,120 400,60 480,60 480,120 560,120 560,60 640,60 640,120 720,120 720,60 800,60 800,120 880,120 880,60 960,60 960,120 1040,120 1040,60 1120,60 1120,120 1200,120 1200,60 1280,60 1280,120 1400,120"
+        fill="none" stroke="#4a90e2" stroke-width="1.5"/>
+      <!-- Noisy/corrupted signal (middle) -->
+      <polyline
+        points="0,290 40,290 40,230 70,230 70,310 100,310 100,240 130,240 130,280 160,280 160,220 190,220 190,300 220,300 220,310 240,310 240,250 270,250 270,290 300,290 300,225 330,225 330,305 360,305 360,235 390,235 390,295 420,295 420,315 450,315 450,245 480,245 480,285 510,285 510,230 540,230 540,300 570,300 570,240 600,240 600,270 640,270 640,225 680,225 680,305 720,305 720,235 760,235 760,295 800,295 800,315 840,315 840,248 880,248 880,290 920,290 920,228 960,228 960,302 1000,302 1000,238 1040,238 1040,298 1080,298 1080,318 1120,318 1120,250 1160,250 1160,288 1200,288 1200,228 1240,228 1240,302 1280,302 1280,318 1400,318"
+        fill="none" stroke="#4a90e2" stroke-width="1.2" stroke-dasharray="3,2"/>
+      <!-- Recovered signal (bottom) -->
+      <polyline
+        points="0,460 80,460 80,400 160,400 160,460 240,460 240,400 320,400 320,460 400,460 400,400 480,400 480,460 560,460 560,400 640,400 640,460 720,460 720,400 800,400 800,460 880,460 880,400 960,400 960,460 1040,460 1040,400 1120,400 1120,460 1200,460 1200,400 1280,400 1280,460 1400,460"
+        fill="none" stroke="#4a90e2" stroke-width="1.5"/>
+      <!-- Channel labels -->
+      <text x="20" y="50" font-family="monospace" font-size="9" fill="#4a90e2" opacity="0.7">SOURCE</text>
+      <text x="20" y="220" font-family="monospace" font-size="9" fill="#4a90e2" opacity="0.7">CHANNEL</text>
+      <text x="20" y="392" font-family="monospace" font-size="9" fill="#4a90e2" opacity="0.7">DECODED</text>
+      <!-- Vertical connectors suggesting transmission -->
+      <line x1="200" y1="130" x2="200" y2="220" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="600" y1="130" x2="600" y2="220" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="1000" y1="130" x2="1000" y2="220" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="200" y1="320" x2="200" y2="390" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="600" y1="320" x2="600" y2="390" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+      <line x1="1000" y1="320" x2="1000" y2="390" stroke="#4a90e2" stroke-width="0.5" opacity="0.4"/>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-steel/60 tracking-widest mb-6">BELL LABS &mdash; MURRAY HILL, NEW JERSEY &mdash; 1943</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      The United States needed to send President Roosevelt's voice across
+      the Atlantic. In real time. Without the Nazis hearing a single word.
+      The problem required a new kind of mathematics &mdash; one that did not
+      yet exist.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      The question Claude Shannon had to answer first:
+      <span class="text-steel not-italic font-semibold"> what is information, exactly?</span>
+    </p>
+  </div>
+
+  <div class="mt-16 flex items-center gap-3 text-ivory-dim/40">
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+    <span class="text-xs font-sans tracking-widest uppercase">A lesson in information theory and code</span>
+    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
+  </div>
+</section>
+
+<section class="bg-navy-medium py-16 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In 1943, Bell Labs was the most productive research institution in the world.
+      Its scientists had already invented the transistor, the solar cell, and information
+      coding techniques that underpinned the entire telephone network. Now the U.S.
+      military needed something far more difficult: a voice communication system so
+      secure that it could carry top-secret conversations between Allied commanders
+      across an ocean patrolled by submarines.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Claude Shannon, twenty-seven years old and already one of the most original
+      minds at Bell Labs, was assigned to the project. The result was
+      <strong class="text-steel">SIGSALY</strong> &mdash; a system that digitised the
+      human voice, encrypted each sample with a one-time key, and transmitted the result
+      as noise indistinguishable from static. It was the first perfectly secure voice
+      communication system ever built.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      But building SIGSALY forced Shannon to confront a deeper question. If you are
+      going to encrypt information, you need to know how much of it there is. If you
+      are going to transmit it over a noisy channel, you need to know the minimum rate
+      at which you can do so without loss. Neither question had a mathematical answer.
+      Shannon spent the next five years building one.
+    </p>
+
+    <div class="bg-steel/5 border border-steel/20 rounded-xl p-6 my-8">
+      <p class="font-sans text-xs text-steel/60 tracking-widest uppercase mb-3">A brief aside</p>
+      <p class="text-base text-ivory/80 leading-relaxed">
+        In September 1943, Alan Turing visited Bell Labs on a liaison mission from
+        Bletchley Park. He and Shannon ate lunch together in the Bell Labs cafeteria
+        several times. They discussed machines, communication, and what it would mean
+        for a machine to think. Neither left a detailed record of the conversations.
+        We know only that two years later, Shannon published a classified paper proving
+        mathematically why ciphers like Enigma could be broken &mdash; answering, in
+        a sense, the question Turing's Bombe had been implicitly asking.
+      </p>
+    </div>
+
+    <blockquote class="pullquote">
+      "Information is the resolution of uncertainty."
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">&mdash; Claude Shannon</footer>
+    </blockquote>
+  </div>
+</section>
+
+<section class="py-16 px-8 md:px-20 bg-navy">
+  <div class="max-w-4xl mx-auto">
+    <p class="chapter-label">The people behind it</p>
+    <h2 class="text-3xl font-serif font-semibold text-ivory mb-10">Three figures you should know</h2>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <ProfileCard
+        name="Claude Shannon"
+        years="1916 &ndash; 2001"
+        role="Mathematician &middot; Bell Labs"
+        bio="In a single paper — 'A Mathematical Theory of Communication' (1948) — Shannon founded information theory, defined entropy, proved the source and channel coding theorems, and established the mathematical foundations for every digital communication system built since."
+        highlight="Shannon's 1948 paper is considered one of the most important scientific papers of the twentieth century. Its concepts underpin the internet, mobile phones, data compression, and modern AI."
+      />
+      <ProfileCard
+        name="David Huffman"
+        years="1925 &ndash; 1999"
+        role="Electrical Engineer &middot; MIT"
+        bio="As a graduate student in 1952, Huffman was given the choice of taking a final exam or finding an optimal prefix-free code. He found it instead. The Huffman coding algorithm reaches within 1 bit of Shannon's entropy lower bound and is still used in JPEG, MP3, and PDF compression today."
+        highlight="Huffman later said he likely would not have discovered the algorithm if he had not been racing against a deadline."
+      />
+      <ProfileCard
+        name="Richard Hamming"
+        years="1915 &ndash; 1998"
+        role="Mathematician &middot; Bell Labs"
+        bio="Shannon's colleague at Bell Labs. Invented error-correcting codes (Hamming codes) after becoming frustrated that the Bell Labs computer would stop and ring a bell when it hit an error on weekends — when no operator was present to restart it."
+        highlight="Hamming codes are still used in computer memory (ECC RAM). The principle extends to the Reed-Solomon codes that protect data on CDs, DVDs, and space probes."
+      />
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================================================= S2: ENTROPY -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 2</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Entropy &mdash; Measuring Surprise</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      What does it mean to say a message contains information?
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Shannon's insight was this: <strong class="text-steel">a message is informative in
+      proportion to how surprising it is.</strong> If you already knew what the message
+      said, it tells you nothing. If it was completely unexpected, it tells you a great deal.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      More formally: the information content of an outcome <em>x</em> with
+      probability <Math formula={String.raw`p(x)`} /> is <Math formula={String.raw`-\log_2 p(x)`} /> bits.
+      A coin flip carries 1 bit. A die roll carries <Math formula={String.raw`\log_2 6 \approx 2.58`} /> bits.
+      A certain outcome carries 0 bits &mdash; no surprise, no information.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The <strong class="text-steel">entropy</strong> of a source <Math formula={String.raw`X`} /> is
+      the <em>average</em> information content across all outcomes &mdash; the expected surprise:
+    </p>
+
+    <div class="bg-steel/5 border-2 border-steel/30 rounded-xl p-8 my-8 text-center">
+      <p class="text-xs text-steel font-sans tracking-widest uppercase mb-4">Shannon Entropy</p>
+      <Math formula={String.raw`H(X) = -\sum_{x} p(x)\,\log_2 p(x)`} display={true} />
+      <p class="text-sm text-ivory/60 mt-4 font-sans">
+        measured in <em>bits per symbol</em>
+      </p>
+    </div>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Why log?</h3>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The logarithm is not arbitrary &mdash; it is forced by a requirement that
+      makes perfect intuitive sense: <strong class="text-amber">information should be additive.</strong>
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      If you flip two fair coins, you learn the result of the first
+      <em>plus</em> the result of the second. Two independent events
+      should carry the sum of their individual information. For independent events,
+      <Math formula={String.raw`p(A \cap B) = p(A)\cdot p(B)`} />, so:
+    </p>
+
+    <div class="math-display my-6 text-ivory">
+      <Math formula={String.raw`-\log_2 p(A \cap B) = -\log_2 p(A) - \log_2 p(B)`} display={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The log turns multiplication into addition. That is exactly the same insight
+      Turing used when he invented decibans &mdash; and the same reason modern machine
+      learning works in log-probabilities.
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-10">
+      <div class="border border-ivory-dim/10 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-2">H = 0</p>
+        <p class="font-mono text-sm text-steel mb-3">complete certainty</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">One outcome is guaranteed. The &ldquo;message&rdquo; tells you nothing you didn't already know.</p>
+      </div>
+      <div class="border border-steel/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-2">H is maximised</p>
+        <p class="font-mono text-sm text-steel mb-3">all outcomes equally likely</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">Maximum uncertainty = maximum information per message. For 26 letters: H = log&#8322;(26) &asymp; 4.7 bits.</p>
+      </div>
+      <div class="border border-amber/20 rounded-xl p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-2">H(English) &asymp; 4.1</p>
+        <p class="font-mono text-sm text-amber mb-3">structured, not random</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">English has predictable patterns &mdash; Q is almost always followed by U &mdash; so its entropy is below the theoretical maximum.</p>
+      </div>
+    </div>
+
+    <EntropyCalculator client:load />
+  </div>
+</section>
+
+
+<!-- ============================================================ S2b: PERFECT SECRECY -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 2b</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Perfect Secrecy &mdash; Why Enigma Was Breakable</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Shannon's 1945 theorem, declassified in 1949, settled the question once and for all
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In 1945, Shannon wrote a classified paper &mdash; <em>A Communication Theory of
+      Secrecy Systems</em> &mdash; that used his new entropy framework to prove something
+      fundamental about cryptography. It was not declassified until 1949.
+    </p>
+
+    <div class="bg-amber/5 border-2 border-amber/30 rounded-xl p-8 my-8 text-center">
+      <p class="text-xs text-amber font-sans tracking-widest uppercase mb-4">Shannon's Perfect Secrecy Theorem (1945)</p>
+      <p class="font-serif text-xl text-ivory leading-relaxed">
+        A cipher is <em>perfectly secure</em> &mdash; unbreakable regardless of computational
+        power &mdash; if and only if the entropy of the key is at least as large as the
+        entropy of the message:
+      </p>
+      <div class="mt-4">
+        <Math formula={String.raw`H(\text{key}) \geq H(\text{message})`} display={true} />
+      </div>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The only cipher that satisfies this is the <strong class="text-amber">one-time pad</strong>:
+      a key that is truly random, as long as the message, and used exactly once.
+      SIGSALY was a voice one-time pad. It was perfectly secure.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Why Enigma Fell Short</h3>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      How much entropy did a Naval Enigma key have? The day settings specified:
+      rotor order (3 from 5), initial positions, plugboard pairs, and ring settings.
+      The theoretical keyspace was about 10&sup2;&sup3; &mdash; roughly 77 bits of
+      entropy if fully exploited.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      A typical message was thirty letters of German military prose.
+      English prose has about 4.1 bits per letter; German military prose
+      is somewhat more predictable. Call it 3.5 bits per letter:
+    </p>
+
+    <div class="math-display my-6 text-ivory">
+      <Math formula={String.raw`H(\text{30-letter message}) \approx 30 \times 3.5 = 105 \text{ bits}`} display={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      So far, the key entropy (77 bits) is less than the message entropy (105 bits).
+      Shannon's theorem says: already breakable in principle.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      But operators made it far worse. They reused the same settings all day.
+      They opened weather reports with <span class="font-mono text-amber">WETTER</span>.
+      They signed off with <span class="font-mono text-amber">HEIL HITLER</span>.
+      They chose wheel positions like <span class="font-mono text-amber">AAA</span>.
+      Each predictable pattern reduced the effective key entropy far below 77 bits &mdash;
+      while the redundancy of German prose remained constant.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">The theorem in one sentence</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Turing's Bayesian decoder exploited the gap between the entropy Enigma
+        operators actually used and the entropy their messages contained. Shannon
+        proved this gap cannot be closed without a key as long as the message itself.
+        Enigma's key was reused daily. The war was over before daily keys could be
+        made long enough.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================================================= S3: THE 1948 PAPER -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 3</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The 1948 Paper</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Two theorems that define the boundaries of all communication
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      On 1 July 1948, the <em>Bell System Technical Journal</em> published
+      &ldquo;A Mathematical Theory of Communication&rdquo; by C.E. Shannon.
+      In 55 pages, Shannon answered two questions that engineers had been
+      asking for decades without a satisfying answer.
+    </p>
+
+    <h3 class="text-2xl font-serif text-steel mb-4">Theorem 1: Source Coding</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      <strong class="text-steel">You cannot compress a source below its entropy.</strong>
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      If a source emits symbols with entropy <Math formula={String.raw`H`} /> bits per symbol,
+      you need at least <Math formula={String.raw`H`} /> bits per symbol to represent it without loss.
+      Any compression that goes below <Math formula={String.raw`H`} /> must, on average, throw
+      information away.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      English prose has entropy around 4.1 bits per letter. A fixed-length ASCII code
+      uses 8 bits. Shannon's theorem says the compression floor is 4.1 bits &mdash; not 0.
+      You can approach it; you cannot beat it.
+    </p>
+
+    <h3 class="text-2xl font-serif text-steel mb-4">Theorem 2: Channel Capacity</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      <strong class="text-steel">Every noisy channel has a capacity <Math formula={String.raw`C`} />, measured
+      in bits per second, such that reliable communication is possible at any rate
+      below <Math formula={String.raw`C`} /> and impossible above it.</strong>
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      For the most important case &mdash; a channel with bandwidth <Math formula={String.raw`B`} /> Hz
+      and signal-to-noise ratio <Math formula={String.raw`S/N`} /> &mdash; the capacity is:
+    </p>
+
+    <div class="bg-steel/5 border-2 border-steel/30 rounded-xl p-8 my-8 text-center">
+      <p class="text-xs text-steel font-sans tracking-widest uppercase mb-4">Shannon-Hartley Theorem</p>
+      <Math formula={String.raw`C = B \log_2\!\left(1 + \frac{S}{N}\right)`} display={true} />
+      <p class="text-sm text-ivory/60 mt-4 font-sans">
+        C in bits/s, B in Hz — the hard upper bound on any communication system
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      This formula is why your internet service provider quotes speeds in bits per second.
+      It is the reason 5G requires wider bandwidth than 4G. It governs satellite
+      communication, deep-space probes, and fibre-optic cables. Engineers do not
+      argue with Shannon's bound &mdash; they design up to it.
+    </p>
+
+    <div class="grid md:grid-cols-2 gap-5 mb-8">
+      <div class="border border-ivory-dim/10 rounded-lg p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-3">Before Shannon (1948)</p>
+        <ul class="space-y-2 font-sans text-sm text-ivory/80 leading-relaxed">
+          <li>&#8226; Engineers thought adding error correction always cost capacity</li>
+          <li>&#8226; There was no known limit on how much noise could be removed</li>
+          <li>&#8226; Communication was an engineering art, not a mathematical science</li>
+        </ul>
+      </div>
+      <div class="border border-steel/30 rounded-lg p-5">
+        <p class="font-sans font-semibold text-ivory text-base mb-3">After Shannon (1948)</p>
+        <ul class="space-y-2 font-sans text-sm text-ivory/80 leading-relaxed">
+          <li>&#8226; There is a hard capacity limit; no engineering can exceed it</li>
+          <li>&#8226; Below capacity, arbitrarily reliable transmission is provably possible</li>
+          <li>&#8226; Information theory became a mathematical discipline</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================= S4: HUFFMAN CODES -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 4</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Compression &mdash; Huffman Codes</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Shannon proved the floor exists. Huffman showed how to reach it.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Shannon's source coding theorem said the entropy <Math formula={String.raw`H`} /> bits per symbol
+      was the compression floor. But it was an existence proof &mdash; it showed the floor
+      was reachable without telling you how to reach it. In 1952, a graduate student
+      named David Huffman found the algorithm.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">The Algorithm</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The idea is beautifully simple. Frequent symbols should get short codes; rare
+      symbols should get long ones. Build a binary tree bottom-up:
+    </p>
+
+    <ol class="space-y-3 mb-8">
+      {[
+        "Start with each symbol as a leaf node, labelled with its frequency.",
+        "Repeatedly take the two lowest-frequency nodes and merge them into a new parent node whose frequency is their sum.",
+        "Assign 0 to one branch and 1 to the other.",
+        "The code for each symbol is the sequence of 0s and 1s on the path from root to leaf.",
+      ].map((step, i) => (
+        <li class="flex gap-4">
+          <span class="font-mono text-xs text-amber/60 mt-1 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+          <p class="text-ivory/80 leading-relaxed">{step}</p>
+        </li>
+      ))}
+    </ol>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The resulting code is <strong class="text-amber">prefix-free</strong>: no codeword
+      is a prefix of another. This means you can decode a bitstream unambiguously without
+      knowing where one codeword ends and the next begins &mdash; just follow the tree.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      The expected code length of a Huffman code is at most <Math formula={String.raw`H + 1`} /> bits
+      per symbol &mdash; within 1 bit of the theoretical floor.
+    </p>
+
+    <HuffmanViz client:load />
+
+    <div class="callout mt-8">
+      <p class="callout-title">Where Huffman codes live today</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Huffman coding is a core component of DEFLATE (used in ZIP, gzip, PNG), JPEG,
+        and MP3 compression. It is in every PDF you have ever opened. The browser
+        decompressing this page very likely used it.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================= S5: PYTHON -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 5</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python &mdash; Build It</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Three implementations: entropy, compression, and a noisy channel
+    </p>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part A: Shannon Entropy</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        The formula in seven lines. Compare English, random, and repetitive text.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>entropy.py</span>
+          <span class="text-amber/60">Notebook 01</span>
+        </div>
+        <Code code={CODE_A} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part B: Huffman Encoder</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Build the tree, assign the codes, verify that average code length
+        matches the entropy floor within 1 bit.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>huffman.py</span>
+          <span class="text-amber/60">Notebook 02</span>
+        </div>
+        <Code code={CODE_B} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part C: Noisy Channel</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Simulate a Binary Symmetric Channel. Measure the error rate with and without
+        a simple repetition code. Verify against Shannon's capacity formula.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>channel.py</span>
+          <span class="text-amber/60">Notebook 03</span>
+        </div>
+        <Code code={CODE_C} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-3 gap-4 mb-6">
+      {[
+        { num: "01", title: "Entropy & Information", desc: "Derive H from first principles. Compute it on real text. Verify the additivity property." },
+        { num: "02", title: "Source Coding",         desc: "Build Huffman codes from scratch. Verify the entropy bound." },
+        { num: "03", title: "Channel Capacity",      desc: "Simulate noisy channels. Verify Shannon's capacity formula experimentally." },
+      ].map(({ num, title, desc }) => (
+        <div class="border border-ivory-dim/10 rounded-lg p-4">
+          <p class="font-mono text-steel text-sm mb-1">Notebook {num}</p>
+          <p class="font-sans font-semibold text-ivory text-base mb-2">{title}</p>
+          <p class="font-sans text-sm text-ivory/80 leading-relaxed">{desc}</p>
+        </div>
+      ))}
+    </div>
+    <div class="bg-navy rounded-xl p-5 font-mono text-sm">
+      <p class="text-ivory-dim/50 mb-2"># Get started</p>
+      <p class="text-ivory"><span class="text-amber">$</span> git clone https://github.com/vivekatsuperset/lutchet</p>
+      <p class="text-ivory"><span class="text-amber">$</span> uv sync && uv run jupyter lab</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================= S6: MODERN ML -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">Section 6</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Information Theory in Modern AI</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Shannon's 1948 concepts are the mathematical core of every large language model
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      When you use ChatGPT, Claude, or Gemini, you are interacting with a system
+      trained by minimising a loss function called <strong class="text-amber">cross-entropy</strong>.
+      This is Shannon's entropy, applied to the difference between what the model
+      predicts and what actually appeared.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Cross-Entropy Loss</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Let <Math formula={String.raw`p`} /> be the true distribution of the next token
+      and <Math formula={String.raw`q`} /> be the model's prediction. The cross-entropy is:
+    </p>
+
+    <div class="bg-amber/5 border border-amber/30 rounded-xl p-6 my-6 text-center">
+      <Math formula={String.raw`H(p, q) = -\sum_x p(x)\,\log_2 q(x)`} display={true} />
+      <p class="text-sm text-ivory/60 mt-3 font-sans">
+        Minimised when <Math formula={String.raw`q = p`} /> — i.e., when the model's predictions match reality
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      In practice, for a language model predicting the next token from a training corpus,
+      <Math formula={String.raw`p`} /> is 1 for the true next token and 0 for all others,
+      so the sum collapses to <Math formula={String.raw`-\log_2 q(\text{true token})`} />.
+      Training minimises the surprise the model expresses at the actual next word.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Perplexity</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Perplexity is cross-entropy exponentiated:
+    </p>
+
+    <div class="math-display my-6 text-ivory">
+      <Math formula={String.raw`\text{PPL} = 2^{H(p, q)}`} display={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      Intuitively, perplexity is the &ldquo;effective branching factor&rdquo; &mdash; how
+      many equally likely choices the model is choosing between at each token position.
+      A model with PPL = 10 is as uncertain at each step as if it were choosing uniformly
+      among 10 possibilities. State-of-the-art LLMs have perplexity below 10 on standard
+      benchmarks.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">KL Divergence</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The Kullback-Leibler divergence measures the extra bits needed when you encode
+      a source distributed as <Math formula={String.raw`p`} /> using a code optimised for <Math formula={String.raw`q`} />:
+    </p>
+
+    <div class="math-display my-6 text-ivory">
+      <Math formula={String.raw`D_{\mathrm{KL}}(p \| q) = \sum_x p(x)\,\log_2 \frac{p(x)}{q(x)} = H(p,q) - H(p)`} display={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-8">
+      KL divergence is the loss in RLHF (reinforcement learning from human feedback) &mdash;
+      the technique used to align language models with human preferences. The penalty
+      term keeps the aligned model from drifting too far from the base model's distribution.
+    </p>
+
+    <div class="overflow-x-auto mb-10">
+      <table class="w-full text-sm font-sans border-collapse">
+        <thead>
+          <tr class="border-b border-ivory-dim/20">
+            <th class="text-left py-3 pr-6 text-amber font-semibold">Shannon (1948)</th>
+            <th class="text-left py-3 text-amber font-semibold">Modern ML (2024)</th>
+          </tr>
+        </thead>
+        <tbody class="text-ivory/80">
+          {[
+            ["Entropy H(X)", "Training objective for every language model"],
+            ["Cross-entropy H(p, q)", "Loss function: measures prediction quality"],
+            ["KL divergence D_KL(p ∥ q)", "RLHF alignment penalty; VAE training objective"],
+            ["Channel capacity C", "Theoretical limit on how well any model can learn a distribution"],
+            ["Source coding theorem", "Compression in gzip, JPEG, MP3, every file format"],
+          ].map(([t, m]) => (
+            <tr class="border-b border-ivory-dim/10">
+              <td class="py-2.5 pr-6 font-mono text-sm text-amber">{t}</td>
+              <td class="py-2.5 font-sans text-sm text-ivory/80">{m}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="border border-ivory-dim/10 rounded-lg p-5 flex items-start gap-4">
+      <div class="text-2xl">&#128211;</div>
+      <div>
+        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 03 &mdash; Channel Capacity &amp; Modern ML</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          Implements cross-entropy loss from scratch, plots KL divergence as a training curve,
+          and shows that GPT-style token prediction is a direct descendant of Shannon's noisy
+          channel model.
+        </p>
+        <code class="text-sm font-mono text-steel mt-2 block">notebooks/03_channel_and_ml.ipynb</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================== EPILOGUE -->
+
+<section class="bg-navy-medium py-24 px-8 md:px-20 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="font-serif text-3xl text-ivory leading-relaxed mb-8">
+      Shannon published his paper in 1948. He spent the following decade
+      riding a unicycle through the Bell Labs hallways, juggling, and
+      mostly ignoring the field he had founded.
+    </p>
+    <blockquote class="pullquote text-left">
+      "The fundamental problem of communication is that of reproducing at one
+      point either exactly or approximately a message selected at another point."
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">&mdash; Claude Shannon, 1948</footer>
+    </blockquote>
+    <p class="text-ivory-dim text-base mt-8 leading-relaxed">
+      The loss function that trains every language model, the compression that
+      shrinks every file, the error correction that protects every data transmission
+      &mdash; all of it traces to a wartime question about sending a president's voice
+      across an ocean without being heard.
+    </p>
+  </div>
+</section>
+
+</LessonLayout>
