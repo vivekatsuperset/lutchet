@@ -100,7 +100,7 @@ print(results[0].window)             # -> recovered starting positions
 
 <!-- =================================================================== S1: THE HOOK -->
 
-<section class="relative min-h-screen flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-40">
+<section class="relative min-h-[60vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
   <!-- Three Enigma rotor wheels -->
   <div class="absolute inset-0 overflow-hidden opacity-[0.07]">
     <svg viewBox="0 0 900 700" preserveAspectRatio="xMaxYMid meet" xmlns="http://www.w3.org/2000/svg"
@@ -296,6 +296,107 @@ print(results[0].window)             # -> recovered starting positions
         highlight="Without Welchman's diagonal board, the Bombe would have been too slow to be operationally useful."
       />
     </div>
+  </div>
+</section>
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">How it worked</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Machine</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Why brute force was impossible &mdash; and what the codebreakers could exploit
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      An Enigma machine looks like a typewriter. Press a key and a lamp lights up
+      somewhere else on the keyboard — that is the encrypted letter. The path the
+      signal takes depends on three things fitted into the machine:
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-10">
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-amber mb-2">Rotors</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Three rotors chosen from a set of five, each wired to scramble the
+          alphabet differently. They step forward with every keypress — the
+          rightmost turns on every letter, the middle turns when the right
+          notch is reached, the left turns more rarely. Like an odometer,
+          but for substitution ciphers.
+        </p>
+      </div>
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-amber mb-2">Reflector</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          After passing through the three rotors, the signal hits a fixed
+          reflector that bounces it back through all three rotors again along
+          a different path. This is what makes Enigma self-reciprocal: the
+          same settings encrypt and decrypt. It also means a letter can
+          <em>never</em> encrypt to itself — the fatal flaw.
+        </p>
+      </div>
+      <div class="border border-ivory-dim/30 rounded-xl p-5">
+        <p class="font-sans font-semibold text-amber mb-2">Plugboard</p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Before and after the rotors, the signal passes through a plugboard
+          that swaps 10 pairs of letters. The plugboard alone contributes
+          more than 150 trillion configurations — the majority of Enigma's
+          total keyspace.
+        </p>
+      </div>
+    </div>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Settings reset at midnight</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Each day, every Enigma operator in the German military received a
+      printed settings sheet specifying which rotors to use, what ring
+      settings to apply, and which 10 pairs of letters to connect on the
+      plugboard. At midnight, the sheet changed. Every break Hut 8 achieved
+      expired in eighteen hours. The work started over the next morning.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The combined effect of rotor choice, rotor order, starting positions,
+      ring settings, and plugboard wiring produces roughly
+      <strong class="text-amber">10²³ possible configurations</strong>.
+      A machine checking one setting per microsecond would take longer than
+      the age of the universe to exhaust them all. Brute force was never an option.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">The aha moment: "Heil Hitler"</h3>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      German operators were required to end every operational message with
+      <span class="font-mono text-amber">HEIL HITLER</span>. The codebreakers
+      knew this. Aligned against the last eleven letters of the ciphertext,
+      those eleven known plaintext letters became a <strong class="text-ivory">crib</strong> —
+      a suspected piece of plaintext at a known position.
+    </p>
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Here is what made the crib devastating: because Enigma's reflector means
+      a letter can never encrypt to itself, any setting where
+      <span class="font-mono text-amber">H</span> maps to
+      <span class="font-mono text-amber">H</span>,
+      <span class="font-mono text-amber">E</span> maps to
+      <span class="font-mono text-amber">E</span>, or any other
+      crib letter maps to itself is immediately, provably impossible.
+      An eleven-character crib typically eliminated more than 99% of all
+      candidate settings before a single probability had been calculated.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">The constraint in one sentence</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        For a candidate setting to survive, no letter in the crib may align
+        with the same letter in the ciphertext. This is not a heuristic —
+        it is an absolute consequence of the reflector's design. Settings
+        that violate it get a likelihood of zero and vanish from the
+        posterior immediately.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mt-8">
+      What remained after constraint elimination was still a large number —
+      but small enough to score with probability. That is where Bayes' theorem
+      came in.
+    </p>
   </div>
 </section>
 
