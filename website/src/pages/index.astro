@@ -132,11 +132,11 @@ import LessonCard from "../components/ui/LessonCard.astro";
 <!-- ============================================================== LESSONS -->
 
 <section id="lessons" class="py-16 px-8 md:px-20 bg-navy">
-  <div class="max-w-3xl mx-auto">
+  <div class="max-w-6xl mx-auto">
     <p class="font-mono text-xs text-amber/70 tracking-widest mb-3 uppercase">The lessons</p>
     <h2 class="font-serif text-3xl text-ivory mb-8">Choose where to start.</h2>
 
-    <div class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <LessonCard
         number={1}
         title="Bayes' Theorem"
@@ -144,6 +144,7 @@ import LessonCard from "../components/ui/LessonCard.astro";
         subjects="Probability Theory · Python"
         href="/lessons/enigma-bayes"
         narrativeHook="Bletchley Park, 1941. The German Navy is sinking Allied convoys faster than they can be replaced. Alan Turing has 10²³ possible cipher settings and eighteen hours."
+        codeHref="https://github.com/vivekatsuperset/lutchet/tree/main/src/enigma_bayes"
       />
 
       <LessonCard
@@ -153,6 +154,7 @@ import LessonCard from "../components/ui/LessonCard.astro";
         subjects="Information Theory · Python"
         href="/lessons/information-theory"
         narrativeHook="Bell Labs, 1943. The U.S. government needs to send a president's voice across the Atlantic without the Nazis intercepting it. Claude Shannon has to figure out what 'information' actually is."
+        codeHref="https://github.com/vivekatsuperset/lutchet/tree/main/src/information_theory"
       />
     </div>
   </div>
