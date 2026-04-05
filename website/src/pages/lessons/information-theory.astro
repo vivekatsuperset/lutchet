@@ -153,13 +153,13 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     </svg>
   </div>
 
-  <p class="font-mono text-xs text-steel/60 tracking-widest mb-6">BELL LABS &mdash; MURRAY HILL, NEW JERSEY &mdash; 1943</p>
+  <p class="font-mono text-xs text-steel/60 tracking-widest mb-6">BELL LABS - MURRAY HILL, NEW JERSEY - 1943</p>
 
   <div class="max-w-3xl">
     <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
       The United States needed to send President Roosevelt's voice across
       the Atlantic. In real time. Without the Nazis hearing a single word.
-      The problem required a new kind of mathematics &mdash; one that did not
+      The problem required a new kind of mathematics, one that did not
       yet exist.
     </p>
     <p class="font-serif text-xl text-ivory-dim italic">
@@ -188,7 +188,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     <p class="text-lg text-ivory/90 leading-relaxed mb-6">
       Claude Shannon, twenty-seven years old and already one of the most original
       minds at Bell Labs, was assigned to the project. The result was
-      <strong class="text-steel">SIGSALY</strong> &mdash; a system that digitised the
+      <strong class="text-steel">SIGSALY</strong>, a system that digitised the
       human voice, encrypted each sample with a one-time key, and transmitted the result
       as noise indistinguishable from static. It was the first perfectly secure voice
       communication system ever built.
@@ -209,14 +209,14 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
         several times. They discussed machines, communication, and what it would mean
         for a machine to think. Neither left a detailed record of the conversations.
         We know only that two years later, Shannon published a classified paper proving
-        mathematically why ciphers like Enigma could be broken &mdash; answering, in
+        mathematically why ciphers like Enigma could be broken, answering, in
         a sense, the question Turing's Bombe had been implicitly asking.
       </p>
     </div>
 
     <blockquote class="pullquote">
       "Information is the resolution of uncertainty."
-      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">&mdash; Claude Shannon</footer>
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">- Claude Shannon</footer>
     </blockquote>
   </div>
 </section>
@@ -257,7 +257,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
 <section class="bg-navy-medium py-20 px-8 md:px-20">
   <div class="max-w-3xl mx-auto">
     <span class="chapter-label">Section 2</span>
-    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Entropy &mdash; Measuring Surprise</h2>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Entropy: Measuring Surprise</h2>
     <p class="text-ivory-dim text-lg italic mb-10">
       What does it mean to say a message contains information?
     </p>
@@ -271,12 +271,12 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
       More formally: the information content of an outcome <em>x</em> with
       probability <Math formula={String.raw`p(x)`} /> is <Math formula={String.raw`-\log_2 p(x)`} /> bits.
       A coin flip carries 1 bit. A die roll carries <Math formula={String.raw`\log_2 6 \approx 2.58`} /> bits.
-      A certain outcome carries 0 bits &mdash; no surprise, no information.
+      A certain outcome carries 0 bits, no surprise, no information.
     </p>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
       The <strong class="text-steel">entropy</strong> of a source <Math formula={String.raw`X`} /> is
-      the <em>average</em> information content across all outcomes &mdash; the expected surprise:
+      the <em>average</em> information content across all outcomes, the expected surprise:
     </p>
 
     <div class="bg-steel/5 border-2 border-steel/30 rounded-xl p-8 my-8 text-center">
@@ -290,7 +290,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     <h3 class="text-2xl font-serif text-amber mb-4">Why log?</h3>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
-      The logarithm is not arbitrary &mdash; it is forced by a requirement that
+      The logarithm is not arbitrary, it is forced by a requirement that
       makes perfect intuitive sense: <strong class="text-amber">information should be additive.</strong>
     </p>
 
@@ -307,7 +307,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
       The log turns multiplication into addition. That is exactly the same insight
-      Turing used when he invented decibans &mdash; and the same reason modern machine
+      Turing used when he invented decibans, and the same reason modern machine
       learning works in log-probabilities.
     </p>
 
@@ -325,7 +325,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
       <div class="border border-amber/20 rounded-xl p-5">
         <p class="font-sans font-semibold text-ivory text-base mb-2">H(English) &asymp; 4.1</p>
         <p class="font-mono text-sm text-amber mb-3">structured, not random</p>
-        <p class="font-sans text-sm text-ivory/80 leading-relaxed">English has predictable patterns &mdash; Q is almost always followed by U &mdash; so its entropy is below the theoretical maximum.</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">English has predictable patterns, Q is almost always followed by U, so its entropy is below the theoretical maximum.</p>
       </div>
     </div>
 
@@ -339,22 +339,22 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
 <section class="py-20 px-8 md:px-20 bg-navy">
   <div class="max-w-3xl mx-auto">
     <span class="chapter-label">Section 2b</span>
-    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Perfect Secrecy &mdash; Why Enigma Was Breakable</h2>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Perfect Secrecy: Why Enigma Was Breakable</h2>
     <p class="text-ivory-dim text-lg italic mb-10">
       Shannon's 1945 theorem, declassified in 1949, settled the question once and for all
     </p>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-6">
-      In 1945, Shannon wrote a classified paper &mdash; <em>A Communication Theory of
-      Secrecy Systems</em> &mdash; that used his new entropy framework to prove something
+      In 1945, Shannon wrote a classified paper, <em>A Communication Theory of
+      Secrecy Systems</em>, that used his new entropy framework to prove something
       fundamental about cryptography. It was not declassified until 1949.
     </p>
 
     <div class="bg-amber/5 border-2 border-amber/30 rounded-xl p-8 my-8 text-center">
       <p class="text-xs text-amber font-sans tracking-widest uppercase mb-4">Shannon's Perfect Secrecy Theorem (1945)</p>
       <p class="font-serif text-xl text-ivory leading-relaxed">
-        A cipher is <em>perfectly secure</em> &mdash; unbreakable regardless of computational
-        power &mdash; if and only if the entropy of the key is at least as large as the
+        A cipher is <em>perfectly secure</em>, unbreakable regardless of computational
+        power, if and only if the entropy of the key is at least as large as the
         entropy of the message:
       </p>
       <div class="mt-4">
@@ -373,7 +373,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
       How much entropy did a Naval Enigma key have? The day settings specified:
       rotor order (3 from 5), initial positions, plugboard pairs, and ring settings.
-      The theoretical keyspace was about 10&sup2;&sup3; &mdash; roughly 77 bits of
+      The theoretical keyspace was about 10&sup2;&sup3;, roughly 77 bits of
       entropy if fully exploited.
     </p>
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
@@ -396,7 +396,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
       They opened weather reports with <span class="font-mono text-amber">WETTER</span>.
       They signed off with <span class="font-mono text-amber">HEIL HITLER</span>.
       They chose wheel positions like <span class="font-mono text-amber">AAA</span>.
-      Each predictable pattern reduced the effective key entropy far below 77 bits &mdash;
+      Each predictable pattern reduced the effective key entropy far below 77 bits,
       while the redundancy of German prose remained constant.
     </p>
 
@@ -443,7 +443,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     </p>
     <p class="text-lg text-ivory/90 leading-relaxed mb-8">
       English prose has entropy around 4.1 bits per letter. A fixed-length ASCII code
-      uses 8 bits. Shannon's theorem says the compression floor is 4.1 bits &mdash; not 0.
+      uses 8 bits. Shannon's theorem says the compression floor is 4.1 bits, not 0.
       You can approach it; you cannot beat it.
     </p>
 
@@ -455,8 +455,8 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     </p>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
-      For the most important case &mdash; a channel with bandwidth <Math formula={String.raw`B`} /> Hz
-      and signal-to-noise ratio <Math formula={String.raw`S/N`} /> &mdash; the capacity is:
+      For the most important case, a channel with bandwidth <Math formula={String.raw`B`} /> Hz
+      and signal-to-noise ratio <Math formula={String.raw`S/N`} />, the capacity is:
     </p>
 
     <div class="bg-steel/5 border-2 border-steel/30 rounded-xl p-8 my-8 text-center">
@@ -471,7 +471,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
       This formula is why your internet service provider quotes speeds in bits per second.
       It is the reason 5G requires wider bandwidth than 4G. It governs satellite
       communication, deep-space probes, and fibre-optic cables. Engineers do not
-      argue with Shannon's bound &mdash; they design up to it.
+      argue with Shannon's bound, they design up to it.
     </p>
 
     <div class="grid md:grid-cols-2 gap-5 mb-8">
@@ -501,14 +501,14 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
 <section class="py-20 px-8 md:px-20 bg-navy">
   <div class="max-w-3xl mx-auto">
     <span class="chapter-label">Section 4</span>
-    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Compression &mdash; Huffman Codes</h2>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Compression: Huffman Codes</h2>
     <p class="text-ivory-dim text-lg italic mb-10">
       Shannon proved the floor exists. Huffman showed how to reach it.
     </p>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-6">
       Shannon's source coding theorem said the entropy <Math formula={String.raw`H`} /> bits per symbol
-      was the compression floor. But it was an existence proof &mdash; it showed the floor
+      was the compression floor. But it was an existence proof, it showed the floor
       was reachable without telling you how to reach it. In 1952, a graduate student
       named David Huffman found the algorithm.
     </p>
@@ -536,11 +536,11 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     <p class="text-lg text-ivory/90 leading-relaxed mb-4">
       The resulting code is <strong class="text-amber">prefix-free</strong>: no codeword
       is a prefix of another. This means you can decode a bitstream unambiguously without
-      knowing where one codeword ends and the next begins &mdash; just follow the tree.
+      knowing where one codeword ends and the next begins, just follow the tree.
     </p>
     <p class="text-lg text-ivory/90 leading-relaxed mb-8">
       The expected code length of a Huffman code is at most <Math formula={String.raw`H + 1`} /> bits
-      per symbol &mdash; within 1 bit of the theoretical floor.
+      per symbol, within 1 bit of the theoretical floor.
     </p>
 
     <HuffmanViz client:load />
@@ -562,7 +562,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
 <section class="bg-navy-medium py-20 px-8 md:px-20">
   <div class="max-w-3xl mx-auto">
     <span class="chapter-label">Section 5</span>
-    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python &mdash; Build It</h2>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python: Build It</h2>
     <p class="text-ivory-dim text-lg italic mb-10">
       Three implementations: entropy, compression, and a noisy channel
     </p>
@@ -680,7 +680,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     </div>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-8">
-      Intuitively, perplexity is the &ldquo;effective branching factor&rdquo; &mdash; how
+      Intuitively, perplexity is the &ldquo;effective branching factor&rdquo;, how
       many equally likely choices the model is choosing between at each token position.
       A model with PPL = 10 is as uncertain at each step as if it were choosing uniformly
       among 10 possibilities. State-of-the-art LLMs have perplexity below 10 on standard
@@ -698,7 +698,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     </div>
 
     <p class="text-lg text-ivory/90 leading-relaxed mb-8">
-      KL divergence is the loss in RLHF (reinforcement learning from human feedback) &mdash;
+      KL divergence is the loss in RLHF (reinforcement learning from human feedback),
       the technique used to align language models with human preferences. The penalty
       term keeps the aligned model from drifting too far from the base model's distribution.
     </p>
@@ -731,7 +731,7 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     <div class="border border-ivory-dim/10 rounded-lg p-5 flex items-start gap-4">
       <div class="text-2xl">&#128211;</div>
       <div>
-        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 03 &mdash; Channel Capacity &amp; Modern ML</p>
+        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 03: Channel Capacity &amp; Modern ML</p>
         <p class="font-sans text-sm text-ivory/80 leading-relaxed">
           Implements cross-entropy loss from scratch, plots KL divergence as a training curve,
           and shows that GPT-style token prediction is a direct descendant of Shannon's noisy
@@ -756,12 +756,12 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     <blockquote class="pullquote text-left">
       "The fundamental problem of communication is that of reproducing at one
       point either exactly or approximately a message selected at another point."
-      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">&mdash; Claude Shannon, 1948</footer>
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">- Claude Shannon, 1948</footer>
     </blockquote>
     <p class="text-ivory-dim text-base mt-8 leading-relaxed">
       The loss function that trains every language model, the compression that
       shrinks every file, the error correction that protects every data transmission
-      &mdash; all of it traces to a wartime question about sending a president's voice
+      all of it traces to a wartime question about sending a president's voice
       across an ocean without being heard.
     </p>
   </div>
