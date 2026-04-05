@@ -168,86 +168,15 @@ print(f"BSC capacity at p=0.10: {capacity:.4f} bits per channel use")  # -> 0.53
     </p>
   </div>
 
-  <div class="mt-16 flex items-center gap-3 text-ivory-dim/40">
-    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
-    <span class="text-xs font-sans tracking-widest uppercase">Mathematics &middot; Code</span>
-    <div class="h-px flex-1 bg-ivory-dim/10 max-w-xs"></div>
-  </div>
 </section>
 
-<section class="bg-navy-medium py-16 px-8 md:px-20">
-  <div class="max-w-3xl mx-auto">
-    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
-      In 1943, Bell Labs was the most productive research institution in the world.
-      Its scientists had already invented the transistor, the solar cell, and information
-      coding techniques that underpinned the entire telephone network. Now the U.S.
-      military needed something far more difficult: a voice communication system so
-      secure that it could carry top-secret conversations between Allied commanders
-      across an ocean patrolled by submarines.
-    </p>
-    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
-      Claude Shannon, twenty-seven years old and already one of the most original
-      minds at Bell Labs, was assigned to the project. The result was
-      <strong class="text-steel">SIGSALY</strong>, a system that digitised the
-      human voice, encrypted each sample with a one-time key, and transmitted the result
-      as noise indistinguishable from static. It was the first perfectly secure voice
-      communication system ever built.
-    </p>
-    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
-      But building SIGSALY forced Shannon to confront a deeper question. If you are
-      going to encrypt information, you need to know how much of it there is. If you
-      are going to transmit it over a noisy channel, you need to know the minimum rate
-      at which you can do so without loss. Neither question had a mathematical answer.
-      Shannon spent the next five years building one.
-    </p>
-
-    <div class="bg-steel/5 border border-steel/20 rounded-xl p-6 my-8">
-      <p class="font-sans text-xs text-steel/60 tracking-widest uppercase mb-3">A brief aside</p>
-      <p class="text-base text-ivory/80 leading-relaxed">
-        In September 1943, Alan Turing visited Bell Labs on a liaison mission from
-        Bletchley Park. He and Shannon ate lunch together in the Bell Labs cafeteria
-        several times. They discussed machines, communication, and what it would mean
-        for a machine to think. Neither left a detailed record of the conversations.
-        We know only that two years later, Shannon published a classified paper proving
-        mathematically why ciphers like Enigma could be broken, answering, in
-        a sense, the question Turing's Bombe had been implicitly asking.
-      </p>
-    </div>
-
-    <blockquote class="pullquote">
-      "Information is the resolution of uncertainty."
-      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">- Claude Shannon</footer>
-    </blockquote>
-  </div>
-</section>
-
-<section class="py-16 px-8 md:px-20 bg-navy">
-  <div class="max-w-4xl mx-auto">
-    <p class="chapter-label">The people behind it</p>
-    <h2 class="text-3xl font-serif font-semibold text-ivory mb-10">Three figures you should know</h2>
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <ProfileCard
-        name="Claude Shannon"
-        years="1916 &ndash; 2001"
-        role="Mathematician &middot; Bell Labs"
-        bio="In a single paper — 'A Mathematical Theory of Communication' (1948) — Shannon founded information theory, defined entropy, proved the source and channel coding theorems, and established the mathematical foundations for every digital communication system built since."
-        highlight="Shannon's 1948 paper is considered one of the most important scientific papers of the twentieth century. Its concepts underpin the internet, mobile phones, data compression, and modern AI."
-      />
-      <ProfileCard
-        name="David Huffman"
-        years="1925 &ndash; 1999"
-        role="Electrical Engineer &middot; MIT"
-        bio="As a graduate student in 1952, Huffman was given the choice of taking a final exam or finding an optimal prefix-free code. He found it instead. The Huffman coding algorithm reaches within 1 bit of Shannon's entropy lower bound and is still used in JPEG, MP3, and PDF compression today."
-        highlight="Huffman later said he likely would not have discovered the algorithm if he had not been racing against a deadline."
-      />
-      <ProfileCard
-        name="Richard Hamming"
-        years="1915 &ndash; 1998"
-        role="Mathematician &middot; Bell Labs"
-        bio="Shannon's colleague at Bell Labs. Invented error-correcting codes (Hamming codes) after becoming frustrated that the Bell Labs computer would stop and ring a bell when it hit an error on weekends — when no operator was present to restart it."
-        highlight="Hamming codes are still used in computer memory (ECC RAM). The principle extends to the Reed-Solomon codes that protect data on CDs, DVDs, and space probes."
-      />
-    </div>
+<section class="bg-navy-medium border-b border-ivory-dim/10 py-6 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto flex items-center justify-between gap-6">
+    <p class="text-ivory/60 text-base">New to this topic? Start with the story — no mathematics required.</p>
+    <a href="/lessons/information-theory-story"
+       class="shrink-0 font-sans text-xs tracking-widest uppercase text-steel/60 hover:text-steel transition-colors">
+      Read the story &#8594;
+    </a>
   </div>
 </section>
 
