@@ -1,0 +1,191 @@
+---
+import LessonLayout from "../../../layouts/LessonLayout.astro";
+---
+
+<LessonLayout
+  title="Graph Theory"
+  description="Four standalone stories tracing graph theory from 1736 Königsberg to the modern internet."
+  subject="Graph Theory · Python"
+  lessonNumber={3}
+>
+
+<!-- ============================================================ HOOK -->
+
+<section class="relative min-h-[55vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
+  <div class="absolute inset-0 overflow-hidden opacity-[0.07]">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <g stroke="#c8a44a" fill="none" stroke-width="1">
+        <!-- Scattered nodes -->
+        <circle cx="200"  cy="150" r="10"/>
+        <circle cx="360"  cy="320" r="10"/>
+        <circle cx="180"  cy="500" r="10"/>
+        <circle cx="520"  cy="180" r="10"/>
+        <circle cx="520"  cy="460" r="10"/>
+        <circle cx="720"  cy="340" r="10"/>
+        <circle cx="900"  cy="160" r="10"/>
+        <circle cx="900"  cy="520" r="10"/>
+        <circle cx="1060" cy="300" r="10"/>
+        <circle cx="1240" cy="200" r="10"/>
+        <circle cx="1240" cy="460" r="10"/>
+        <!-- Edges forming a loose network -->
+        <line x1="200"  y1="150" x2="360"  y2="320"/>
+        <line x1="200"  y1="150" x2="520"  y2="180"/>
+        <line x1="360"  y1="320" x2="520"  y2="180"/>
+        <line x1="360"  y1="320" x2="520"  y2="460"/>
+        <line x1="360"  y1="320" x2="180"  y2="500"/>
+        <line x1="180"  y1="500" x2="520"  y2="460"/>
+        <line x1="520"  y1="180" x2="720"  y2="340"/>
+        <line x1="520"  y1="460" x2="720"  y2="340"/>
+        <line x1="720"  y1="340" x2="900"  y2="160"/>
+        <line x1="720"  y1="340" x2="900"  y2="520"/>
+        <line x1="900"  y1="160" x2="1060" y2="300"/>
+        <line x1="900"  y1="520" x2="1060" y2="300"/>
+        <line x1="1060" y1="300" x2="1240" y2="200"/>
+        <line x1="1060" y1="300" x2="1240" y2="460"/>
+        <line x1="1240" y1="200" x2="1240" y2="460"/>
+      </g>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-amber/60 tracking-widest mb-6">GRAPH THEORY · 1736 TO PRESENT</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      Some of the most important mathematics of the last three centuries
+      began as a parlour puzzle about seven bridges in a Prussian city.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      Four standalone stories trace how graph theory went from a question
+      no one could answer to the
+      <span class="text-amber not-italic font-semibold">invisible architecture of the modern internet.</span>
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ THE ARC -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <span class="chapter-label">The arc</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Five beats across three centuries</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Read in order, or dive straight into whichever story pulls you in.
+    </p>
+
+    <div class="space-y-6 text-lg text-ivory/90 leading-relaxed">
+      <p>
+        <strong class="text-amber">Königsberg, 1736.</strong> Leonhard Euler
+        proves the city's bridge puzzle is impossible, and accidentally
+        invents a new branch of mathematics. What matters isn't the
+        geography. Only how the pieces connect.
+      </p>
+      <p>
+        <strong class="text-amber">What Euler started.</strong> Graph theory
+        as a field takes shape over the next two centuries. Quiet, academic,
+        mostly unnoticed. Dénes König writes the first textbook in 1936,
+        eight years before Normandy.
+      </p>
+      <p>
+        <strong class="text-amber">Normandy, 1944.</strong> The Allies face
+        network problems graph theory could have solved. But the formal
+        tools do not exist yet. They improvise. They win anyway.
+      </p>
+      <p>
+        <strong class="text-amber">RAND, 1955.</strong> American analysts
+        study the Soviet rail network. The tools Normandy needed finally get
+        built, motivated by the next potential war.
+      </p>
+      <p>
+        <strong class="text-amber">Today.</strong> Every packet you send
+        traverses a graph. Every route you drive. Every recommendation you
+        get. And, increasingly, every fact an LLM retrieves.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ STORIES -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-4xl mx-auto">
+    <span class="chapter-label">The four stories</span>
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-10">Choose where to start.</h2>
+
+    <div class="grid gap-5">
+
+      <!-- Story 01: available -->
+      <a href="/lessons/graph-theory/koenigsberg"
+         class="group block border border-ivory-dim/15 rounded-xl p-7 hover:border-amber/40 hover:bg-amber/[0.03] transition-all relative overflow-hidden">
+        <span class="absolute top-3 right-5 font-serif font-bold text-7xl text-ivory/[0.06] group-hover:text-amber/[0.10] transition-colors leading-none select-none">01</span>
+        <p class="font-mono text-xs text-amber/70 tracking-widest mb-3 uppercase">Story 01 · Königsberg, 1736</p>
+        <h3 class="font-serif text-2xl text-ivory mb-2 group-hover:text-amber transition-colors">The Birth of an Idea</h3>
+        <p class="text-ivory/70 italic mb-3">A puzzle no one could solve, until Euler stopped looking at the map.</p>
+        <p class="text-ivory/80 leading-relaxed text-base mb-4">
+          Seven bridges, four land masses, one of Europe's most prolific
+          mathematicians, and the insight that the answer depends on something
+          other than what anyone was looking at.
+        </p>
+        <p class="font-sans text-sm tracking-widest uppercase text-amber/80 group-hover:text-amber transition-colors">
+          Read story 01 &#8594;
+        </p>
+      </a>
+
+      <!-- Story 02: available -->
+      <a href="/lessons/graph-theory/networks"
+         class="group block border border-ivory-dim/15 rounded-xl p-7 hover:border-amber/40 hover:bg-amber/[0.03] transition-all relative overflow-hidden">
+        <span class="absolute top-3 right-5 font-serif font-bold text-7xl text-ivory/[0.06] group-hover:text-amber/[0.10] transition-colors leading-none select-none">02</span>
+        <p class="font-mono text-xs text-amber/70 tracking-widest mb-3 uppercase">Story 02 · Amsterdam, 1956</p>
+        <h3 class="font-serif text-2xl text-ivory mb-2 group-hover:text-amber transition-colors">When Networks Became Urgent</h3>
+        <p class="text-ivory/70 italic mb-3">Edsger Dijkstra, a café on the Leidseplein, and twenty minutes without a pencil.</p>
+        <p class="text-ivory/80 leading-relaxed text-base mb-4">
+          A demo problem for a new Dutch computer turned into the
+          algorithm that routes every packet on the modern internet.
+          The world had to wait twelve years for it.
+        </p>
+        <p class="font-sans text-sm tracking-widest uppercase text-amber/80 group-hover:text-amber transition-colors">
+          Read story 02 &#8594;
+        </p>
+      </a>
+
+      <!-- Story 03: available -->
+      <a href="/lessons/graph-theory/soviet-rail"
+         class="group block border border-ivory-dim/15 rounded-xl p-7 hover:border-amber/40 hover:bg-amber/[0.03] transition-all relative overflow-hidden">
+        <span class="absolute top-3 right-5 font-serif font-bold text-7xl text-ivory/[0.06] group-hover:text-amber/[0.10] transition-colors leading-none select-none">03</span>
+        <p class="font-mono text-xs text-amber/70 tracking-widest mb-3 uppercase">Story 03 · RAND, 1955</p>
+        <h3 class="font-serif text-2xl text-ivory mb-2 group-hover:text-amber transition-colors">Flow, Cuts, and the Cold War</h3>
+        <p class="text-ivory/70 italic mb-3">Ted Harris, Frank Ross, and a classified map of the Soviet rail network.</p>
+        <p class="text-ivory/80 leading-relaxed text-base mb-4">
+          A targeting study at RAND asked which rails to bomb to sever
+          Soviet supply lines. The mathematical answer, max-flow / min-cut,
+          was being written one floor away.
+        </p>
+        <p class="font-sans text-sm tracking-widest uppercase text-amber/80 group-hover:text-amber transition-colors">
+          Read story 03 &#8594;
+        </p>
+      </a>
+
+      <!-- Story 04: available -->
+      <a href="/lessons/graph-theory/random-walks"
+         class="group block border border-ivory-dim/15 rounded-xl p-7 hover:border-amber/40 hover:bg-amber/[0.03] transition-all relative overflow-hidden">
+        <span class="absolute top-3 right-5 font-serif font-bold text-7xl text-ivory/[0.06] group-hover:text-amber/[0.10] transition-colors leading-none select-none">04</span>
+        <p class="font-mono text-xs text-amber/70 tracking-widest mb-3 uppercase">Story 04 · Stanford, 1998 and now</p>
+        <h3 class="font-serif text-2xl text-ivory mb-2 group-hover:text-amber transition-colors">Graphs Everywhere</h3>
+        <p class="text-ivory/70 italic mb-3">A bored surfer, a random walk, and the same algorithm running thirty years apart.</p>
+        <p class="text-ivory/80 leading-relaxed text-base mb-4">
+          Random walks on the web graph built Google. Random walks on
+          knowledge graphs are the frontier for making language models
+          less confabulatory. One algorithm, two centuries of the web.
+        </p>
+        <p class="font-sans text-sm tracking-widest uppercase text-amber/80 group-hover:text-amber transition-colors">
+          Read story 04 &#8594;
+        </p>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+</LessonLayout>

@@ -1,0 +1,636 @@
+---
+import { Code } from "astro/components";
+import LessonLayout from "../../../layouts/LessonLayout.astro";
+import Math from "../../../components/ui/Math.astro";
+import DutchRoutes from "../../../components/interactive/graph-theory/DutchRoutes";
+import DijkstraStepper from "../../../components/interactive/graph-theory/DijkstraStepper";
+
+const CODE_WEIGHTED = `from collections import defaultdict
+from dataclasses import dataclass, field
+
+@dataclass
+class WeightedGraph:
+    """Undirected graph with non-negative edge weights."""
+    _adj: dict[str, list[tuple[str, float]]] = field(
+        default_factory=lambda: defaultdict(list)
+    )
+
+    def add_edge(self, u: str, v: str, weight: float) -> None:
+        if weight < 0:
+            raise ValueError(f"Negative weight {weight} not allowed.")
+        self._adj[u].append((v, weight))
+        self._adj[v].append((u, weight))
+
+    def neighbours(self, node: str) -> list[tuple[str, float]]:
+        return list(self._adj[node])
+
+    @property
+    def nodes(self) -> list[str]:
+        return list(self._adj.keys())
+`;
+
+const CODE_DIJKSTRA = `import heapq
+import math
+
+def dijkstra(g: WeightedGraph, source: str):
+    """Return (distances, predecessors) from source to every node."""
+    distances = {n: math.inf for n in g.nodes}
+    predecessors = {n: None for n in g.nodes}
+    distances[source] = 0.0
+
+    frontier = [(0.0, source)]                  # min-heap by distance
+    while frontier:
+        d, u = heapq.heappop(frontier)
+        if d > distances[u]:                    # stale entry
+            continue
+        for v, w in g.neighbours(u):
+            alt = d + w
+            if alt < distances[v]:              # relaxation
+                distances[v] = alt
+                predecessors[v] = u
+                heapq.heappush(frontier, (alt, v))
+
+    return distances, predecessors
+`;
+---
+
+<LessonLayout
+  title="Networks, 1956"
+  description="How Edsger Dijkstra designed the shortest-path algorithm in 20 minutes at an Amsterdam café, and why the world had to wait twelve years for it."
+  subject="Graph Theory · Python"
+  lessonNumber={3}
+>
+
+<!-- ============================================================ S1: THE HOOK -->
+
+<section class="relative min-h-[60vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
+  <div class="absolute inset-0 overflow-hidden opacity-[0.09]">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <g stroke="#4a90e2" fill="none" stroke-width="1">
+        <!-- A loose web of shortest-path-like edges -->
+        <circle cx="160"  cy="180" r="8"/>
+        <circle cx="360"  cy="120" r="8"/>
+        <circle cx="540"  cy="230" r="8"/>
+        <circle cx="740"  cy="150" r="8"/>
+        <circle cx="920"  cy="270" r="8"/>
+        <circle cx="1100" cy="160" r="8"/>
+        <circle cx="1260" cy="320" r="8"/>
+        <circle cx="300"  cy="420" r="8"/>
+        <circle cx="520"  cy="500" r="8"/>
+        <circle cx="760"  cy="440" r="8"/>
+        <circle cx="1020" cy="520" r="8"/>
+        <line x1="160"  y1="180" x2="360"  y2="120" stroke-width="2"/>
+        <line x1="360"  y1="120" x2="540"  y2="230" stroke-width="2"/>
+        <line x1="540"  y1="230" x2="740"  y2="150" stroke-width="2"/>
+        <line x1="740"  y1="150" x2="920"  y2="270" stroke-width="2"/>
+        <line x1="920"  y1="270" x2="1100" y2="160" stroke-width="2"/>
+        <line x1="1100" y1="160" x2="1260" y2="320" stroke-width="2"/>
+        <line x1="160"  y1="180" x2="300"  y2="420"/>
+        <line x1="300"  y1="420" x2="520"  y2="500"/>
+        <line x1="520"  y1="500" x2="760"  y2="440"/>
+        <line x1="760"  y1="440" x2="1020" y2="520"/>
+        <line x1="540"  y1="230" x2="520"  y2="500"/>
+        <line x1="740"  y1="150" x2="760"  y2="440"/>
+        <line x1="920"  y1="270" x2="1020" y2="520"/>
+      </g>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-amber/60 tracking-widest mb-6">AMSTERDAM · LEIDSEPLEIN · 1956</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      Edsger Dijkstra is 26, out shopping with his fiancée, sitting at
+      a café with a cup of coffee. He has no paper, no pencil, and twenty
+      minutes before the stores open again.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      By the time he finishes the coffee he has invented the algorithm
+      <span class="text-amber not-italic font-semibold">that will route every packet on the future internet.</span>
+    </p>
+  </div>
+</section>
+
+<section class="bg-navy-medium border-b border-ivory-dim/10 py-6 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto flex items-center justify-between gap-6">
+    <p class="text-ivory/60 text-base">Part of <em>Graph Theory</em>: four standalone stories tracing the mathematics of connection.</p>
+    <a href="/lessons/graph-theory/"
+       class="shrink-0 font-sans text-xs tracking-widest uppercase text-amber/60 hover:text-amber transition-colors">
+      See all four &#8594;
+    </a>
+  </div>
+</section>
+
+
+<!-- =========================================================== S2: ARMAC -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">A Demo for a New Computer</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      The Mathematical Centre in Amsterdam was about to unveil its second machine.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In 1956 the Mathematical Centre in Amsterdam (today called the CWI)
+      was preparing the public unveiling of <strong class="text-amber">ARMAC</strong>,
+      its second computer. ARMAC had magnetic-core memory, vacuum tubes,
+      and a clock rate measured in microseconds. The staff wanted to
+      demonstrate it to an audience of scientists, businessmen, and
+      journalists, most of whom had never seen a computer before.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The demonstration needed a problem the audience could follow. Not
+      a differential equation. Not a cryptographic cipher. Something
+      concrete, something familiar.
+      <strong class="text-amber">Edsger Dijkstra</strong>, a 26-year-old
+      programmer at the Centre, was assigned to come up with it.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      He chose a question that anyone driving in the Netherlands could
+      understand: given a map of the 64 largest Dutch cities, what is
+      the shortest road route between any two of them? The audience
+      would call out a pair; the computer would answer in seconds.
+    </p>
+
+    <blockquote class="pullquote">
+      &ldquo;What is the shortest way to travel from Rotterdam to
+      Groningen, in general: from given city to given city? It is the
+      algorithm for the shortest path, which I designed in about twenty
+      minutes.&rdquo;
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">Edsger Dijkstra, EWD 1166: <em>From my Life</em></footer>
+    </blockquote>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mt-8">
+      Dijkstra was out shopping in Amsterdam with his fiancée Maria
+      Debets. They stopped at a café terrace on the Leidseplein for
+      coffee. He had no pencil. No paper. In the twenty minutes before
+      the shops reopened, he worked out the algorithm in his head. He
+      later said the absence of pencil and paper almost forced him to
+      avoid unnecessary complications.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S3: PROBLEM -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Problem, Precisely</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      A weighted graph, a source, a question about the cheapest way to everywhere else.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Give every edge a non-negative number. On a road map, the number
+      is a distance. On a telephone network, it is a cost. On the
+      internet, it is a latency. The graph with numbers attached is a
+      <strong class="text-amber">weighted graph</strong>.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Pick a source node <Math formula={String.raw`s`} />. The
+      <strong class="text-amber">single-source shortest path</strong>
+      problem asks: for every other node <Math formula={String.raw`v`} />,
+      what is the minimum total weight of any path from
+      <Math formula={String.raw`s`} /> to <Math formula={String.raw`v`} />,
+      and what is a path achieving that minimum?
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The brute-force answer is to enumerate every possible path. On
+      a graph with <Math formula={String.raw`n`} /> nodes that can be
+      exponentially many paths. Even on ten nodes it is intractable
+      by hand. In 1956 the bottleneck was not that the problem was
+      hard to state; it was that nobody had a good algorithm.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">Why non-negative weights?</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Dijkstra's method is greedy: once it decides a node's distance
+        is final, it never revisits the decision. A negative edge could
+        retroactively shorten a path through an already-settled node,
+        which would break the guarantee. For graphs with negative
+        weights you need Bellman-Ford (1958) instead. Road distances
+        are always non-negative, which is why the ARMAC demo worked.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S4: INSIGHT -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Insight: Grow the Shortest-Path Tree</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Settle the nearest unsettled node. Repeat until the graph is settled.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Dijkstra's idea: process nodes in order of their true distance
+      from the source. Keep a running tentative distance to every node,
+      starting at 0 for the source and <Math formula={String.raw`\infty`} />
+      for everyone else. At each step, pick the unsettled node with the
+      smallest tentative distance, mark it as settled, and for each of
+      its neighbours check whether going through the newly-settled node
+      improves their tentative distance. Repeat.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The key claim: when a node becomes settled, its tentative distance
+      is already correct. No later relaxation through any other settled
+      node can shorten it, because all other settled nodes have smaller
+      or equal distance, and the edges we have not yet crossed are
+      non-negative. This is the invariant the greedy choice preserves.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Try it on a map. Pick a source (click a city). Pick a target
+      (shift-click). The gold edges show the current shortest path. Drag
+      the weights up or down and watch the path rearrange itself.
+    </p>
+
+    <DutchRoutes client:load />
+
+    <p class="text-sm text-ivory-dim mt-6 leading-relaxed">
+      Notice how the shortest path is rarely the fewest-edge path. The
+      two-hop route is often worse than a three-hop route. This is why
+      BFS is not enough: BFS is correct only on unweighted graphs.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S5: ALGORITHM -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Algorithm, Step by Step</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Watch the frontier expand. Every extraction settles one node.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Below is the same Dutch road graph, with Rotterdam fixed as the
+      source. Step through the algorithm one extraction at a time. Gold
+      nodes are <em>settled</em>: their distance is final. Blue nodes
+      are on the <em>frontier</em>: reached, but with only a tentative
+      distance. Numbers below each city are tentative distances in
+      kilometres; <Math formula={String.raw`\infty`} /> means not yet
+      reached.
+    </p>
+
+    <DijkstraStepper client:load />
+
+    <div class="bg-steel/5 border-2 border-steel/30 rounded-xl p-8 my-10 text-center">
+      <p class="text-xs text-steel font-sans tracking-widest uppercase mb-4">Correctness</p>
+      <p class="font-serif text-xl text-ivory leading-relaxed">
+        When the node <Math formula={String.raw`u`} /> is extracted from
+        the frontier, its tentative distance
+        <Math formula={String.raw`d[u]`} /> equals the true shortest-path
+        distance from <Math formula={String.raw`s`} /> to
+        <Math formula={String.raw`u`} />.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In plain English: the moment Dijkstra reaches into the frontier
+      and pulls out whichever node has the smallest tentative number
+      attached to it, that number is already the truth. It is the
+      real shortest distance from the source. No later discovery, no
+      cleverer path found three iterations from now, will ever
+      shorten it. Once a node is marked settled, it stays settled
+      forever. This is the whole reason the algorithm is fast: each
+      node is touched once, its answer recorded, and never revisited.
+      Greedy and correct at the same time, which is a rare
+      combination.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Why is it true? Here is the idea, and then the symbols.
+      Imagine there is a secretly-better path to <Math formula={String.raw`u`} />
+      that Dijkstra does not yet know about. That path has to leave
+      the settled region somewhere, because the source is settled
+      and <Math formula={String.raw`u`} /> is not. The first node it
+      steps out onto is some frontier node <Math formula={String.raw`y`} />.
+      But by the greedy rule, Dijkstra picked <Math formula={String.raw`u`} />
+      precisely because <Math formula={String.raw`u`} /> had a
+      smaller tentative distance than every other frontier node,
+      including <Math formula={String.raw`y`} />. So the supposedly
+      shorter path through <Math formula={String.raw`y`} /> cannot
+      actually be shorter. Contradiction. The tentative distance
+      was the truth all along.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Proof sketch. When <Math formula={String.raw`u`} /> is extracted,
+      consider any path <Math formula={String.raw`P`} /> from
+      <Math formula={String.raw`s`} /> to <Math formula={String.raw`u`} />.
+      Walk along <Math formula={String.raw`P`} /> and find the first
+      node <Math formula={String.raw`y`} /> that is still on the
+      frontier. The prefix of <Math formula={String.raw`P`} /> up to
+      <Math formula={String.raw`y`} /> is already the shortest path to
+      <Math formula={String.raw`y`} /> (by induction on settled nodes),
+      so <Math formula={String.raw`d[y] \le \text{length}(P)`} />. But
+      we chose <Math formula={String.raw`u`} />, not
+      <Math formula={String.raw`y`} />, which means
+      <Math formula={String.raw`d[u] \le d[y] \le \text{length}(P)`} />.
+      Since <Math formula={String.raw`P`} /> was arbitrary,
+      <Math formula={String.raw`d[u]`} /> is at most the true shortest
+      distance. It is also at least that distance, because
+      <Math formula={String.raw`d[u]`} /> is the length of <em>some</em>
+      path. So they are equal.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The complexity, with a binary heap as the priority queue, is
+      <Math formula={String.raw`O((V + E) \log V)`} />: every edge is
+      relaxed at most once, every relaxation may trigger a heap push,
+      and every node is extracted once. Fibonacci heaps bring it down
+      to <Math formula={String.raw`O(E + V \log V)`} />, but in practice
+      binary heaps win on cache behaviour.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      To get a feel for what that bound means, picture a road graph
+      with a million intersections and three million road segments.
+      The brute-force "try every path" approach is astronomically
+      hopeless, doubly-exponential in the worst case. Dijkstra on
+      the same graph is a few tens of millions of basic operations,
+      finishing in well under a second on any modern laptop. That
+      is the gap between a problem that is trivial to <em>state</em>
+      and a problem that is tractable to <em>solve</em>, and it is
+      the gap the world had to wait twelve years for someone to
+      close.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S6: WHY LATE -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Why the World Had to Wait</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Twelve years before ARMAC, the Allies had a logistics problem they would have loved to hand to Dijkstra.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In the summer of 1944, the Allied invasion of northern France
+      depended on moving ammunition, fuel, and food from the Normandy
+      beaches to armies racing east toward Germany. The
+      <strong class="text-amber">Red Ball Express</strong> was the
+      answer: a round-the-clock truck convoy system running reserved
+      two-lane highways, at one point delivering over twelve thousand
+      tons of supplies per day. The question of which roads to reserve,
+      in what order, with what priority, is a shortest-path problem in
+      all but name.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      But no one in 1944 could call it that. The word
+      <em>graph</em> in the modern combinatorial sense was known only to
+      a small academic community. The first textbook on graph theory
+      (Dénes König's) had been published in 1936. Linear programming,
+      the technique that would let George Dantzig formalise supply
+      logistics, would not exist until 1947. Operations Research teams
+      on both sides of the Atlantic did extraordinary work by
+      combining hand calculation, nomograms, and sheer intuition. What
+      they did not have was an algorithm that turned a road network
+      into an answer.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The gap between <em>problem that mattered</em> and
+      <em>algorithm that solves it</em> was twelve years. That gap is
+      typical of how graph theory has entered the world. The abstraction
+      arrives first; the infrastructure that needs it arrives later;
+      the algorithm that bridges them arrives later still. Euler gave
+      us the language in 1736. The war gave us the motivation in 1944.
+      Dijkstra, in 1956, closed the loop over a cup of coffee.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">A common error</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Popular accounts sometimes claim Allied Operations Research
+        teams used max-flow or shortest-path algorithms during the war.
+        They did not. Ford and Fulkerson's max-flow paper is from 1956;
+        Dijkstra 1959; Bellman 1958; Dantzig's simplex method 1947. The
+        OR work was real and decisive, but it used the tools available
+        at the time: linear combinations of hand-computed tables,
+        priority rules, and a lot of sleepless nights.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S7: PYTHON -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python: Build It</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      A weighted graph in twenty lines. Dijkstra in fifteen.
+    </p>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part A: A weighted graph</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        An adjacency list of
+        <code class="text-steel text-sm">(neighbour, weight)</code>
+        tuples. Negative weights are rejected at insert time, so the
+        algorithm below can trust its input.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>weighted.py</span>
+          <span class="text-amber/60">Notebook 07</span>
+        </div>
+        <Code code={CODE_WEIGHTED} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part B: Dijkstra's algorithm</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        A binary-heap priority queue keeps the frontier ordered by
+        tentative distance. The &ldquo;stale entry&rdquo; check is what
+        lets us push duplicate entries when we relax an edge, without
+        needing a decrease-key operation.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>dijkstra.py</span>
+          <span class="text-amber/60">Notebook 07</span>
+        </div>
+        <Code code={CODE_DIJKSTRA} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="border border-ivory-dim/10 rounded-lg p-5 flex items-start gap-4">
+      <div class="text-2xl">&#128211;</div>
+      <div>
+        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 07: Dijkstra and the Dutch cities</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          Build the Dutch road graph. Run Dijkstra from Rotterdam. Recover
+          a path from the predecessor map. Then watch what happens when
+          you slip a negative edge into the graph, and why that is the
+          boundary of the algorithm.
+        </p>
+        <code class="text-sm font-mono text-steel mt-2 block">notebooks/07_graph_theory_dijkstra.ipynb</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S8: FORWARD -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">What Dijkstra's Three Pages Became</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Every packet you send. Every route you drive. Every turn-by-turn direction.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Dijkstra published the algorithm in 1959 in <em>Numerische
+      Mathematik</em>, three pages under the title <em>A Note on Two
+      Problems in Connexion with Graphs</em>. It was not the paper he
+      thought would matter. The ARMAC demo was a novelty item.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Within a decade, shortest-path computation had become the core
+      primitive of network routing. When the <strong class="text-amber">ARPANET</strong>
+      came online in 1969 its routers computed shortest paths between
+      Interface Message Processors. The <strong class="text-amber">OSPF</strong>
+      protocol that routes much of the modern internet's backbone
+      traffic is Dijkstra running inside every router, recomputing a
+      shortest-path tree each time the network topology changes. The
+      <strong class="text-amber">Bellman-Ford</strong> variant runs in
+      every BGP-speaking router when negative weights (or path
+      attributes that can behave like them) matter.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Google Maps, Waze, OpenStreetMap routing, the navigation screen
+      in a modern car, the path a logistics algorithm picks to deliver
+      a package: all descendants of those twenty minutes on the
+      Leidseplein.
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-8">
+      {[
+        { era: "Next story", title: "Flow and cuts",   desc: "Ford and Fulkerson, max-flow / min-cut, and the Cold War rail study that motivated it." },
+        { era: "Then",       title: "Random walks",    desc: "PageRank built Google this way. Modern LLMs retrieve knowledge this way." },
+        { era: "Eventually", title: "Four algorithms", desc: "One insight from 1736 that made all of them thinkable." },
+      ].map(({ era, title, desc }) => (
+        <div class="border border-ivory-dim/10 rounded-xl p-5">
+          <p class="font-mono text-xs text-amber/60 tracking-widest uppercase mb-2">{era}</p>
+          <p class="font-sans font-semibold text-ivory text-base mb-2">{title}</p>
+          <p class="font-sans text-sm text-ivory/80 leading-relaxed">{desc}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================================================== S9: FURTHER READING -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Further Reading</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Start with Dijkstra himself. Three pages in 1959; a memoir in 1993.
+    </p>
+
+    <div class="space-y-6">
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Edsger W. Dijkstra, <em>A Note on Two Problems in Connexion with Graphs</em> (Numerische Mathematik, 1959)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The original paper. Three pages. Two problems: shortest path
+          and minimum spanning tree. If you only read one paper in this
+          topic, read this one.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Edsger W. Dijkstra, <em>EWD 1166: From my Life</em> (1993)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Dijkstra's own account of the café story, the ARMAC demo, and
+          what he was trying to do with it. A short, funny, self-deprecating
+          essay from a man who would later win the Turing Award.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Robert Sedgewick and Kevin Wayne, <em>Algorithms</em> (Addison-Wesley, 4th ed. 2011)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Chapter 4.4 covers Dijkstra, Bellman-Ford, and the algebra of
+          shortest paths with unusual clarity. The accompanying Java
+          code is free online.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Cormen, Leiserson, Rivest and Stein, <em>Introduction to Algorithms</em> (MIT Press, 4th ed. 2022)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The canonical reference. Chapter 22 for single-source shortest
+          paths, with full proofs and complexity analysis. Drier than
+          Sedgewick, more complete.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-steel/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Alexander Schrijver, <em>On the History of Combinatorial Optimization (till 1960)</em>
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Continues from where Story 01 left off. Carefully separates
+          what was known during WWII from what was retroactively claimed.
+          Indispensable for the Normandy paragraph.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ EPILOGUE -->
+
+<section class="bg-navy py-24 px-8 md:px-20 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="font-serif text-3xl text-ivory leading-relaxed mb-8">
+      Three pages, written for a demo nobody remembers, solving a
+      problem nobody had asked. Half a century later, its descendants
+      route the traffic of every device on earth.
+    </p>
+    <p class="text-ivory-dim text-base mt-8 leading-relaxed">
+      Dijkstra once said he avoided publishing the algorithm for three
+      years because he thought it was too obvious to be worth a paper.
+      The world disagreed.
+    </p>
+  </div>
+</section>
+
+</LessonLayout>

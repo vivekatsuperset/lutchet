@@ -1,15 +1,8 @@
 # lutchet
 
-Interactive lessons on cryptography, probability, and information theory.
-Each lesson has a companion website with visualisations and a Jupyter notebook
-you can run locally.
+Mathematics and CS through stories: interactive lessons with visualisations, Jupyter notebooks, and video animations.
 
-## Lessons
-
-| # | Lesson | Notebook |
-|---|--------|----------|
-| 1 | [Enigma & Bayes](https://lutchet.netlify.app/lessons/enigma-bayes) | `notebooks/01–04` |
-| 2 | [Information Theory](https://lutchet.netlify.app/lessons/information-theory) | `notebooks/05` |
+Live site: **https://lutchet.netlify.app**
 
 ## Getting started
 
@@ -22,20 +15,60 @@ uv sync
 uv run jupyter lab
 ```
 
-Then open the notebook for whichever lesson you're following.
+Open the notebook for whichever topic you're following.
 
-## Structure
-
-```
-src/
-  enigma_bayes/       Python implementation backing the Enigma & Bayes lesson
-  information_theory/ Python implementation backing the Information Theory lesson
-notebooks/            Jupyter notebooks — one per chapter
-website/              Astro site (you don't need this to run the notebooks)
-```
-
-Run the smoke test to confirm everything is wired up:
+Verify everything is wired up:
 
 ```bash
 uv run python main.py
 ```
+
+## Website (local dev)
+
+```bash
+cd website
+npm install
+npm run dev      # http://localhost:4321
+npm run build    # production build → website/dist/
+```
+
+## Video animations
+
+```bash
+cd video
+npm install
+npm run studio   # Remotion Studio preview
+npm run render   # render to out/
+```
+
+## Structure
+
+Each topic gets a folder in `src/`, a page under `website/src/pages/lessons/`, one or more notebooks, and optionally a video composition.
+
+```
+src/
+  <topic>/              Python implementation for a topic
+notebooks/              Jupyter notebooks, numbered chapters
+website/                Astro + React + Tailwind static site (Netlify)
+  src/
+    pages/
+      index.astro       Homepage (topic cards)
+      lessons/          One .astro page per topic
+    components/
+      ui/               LessonCard, Math (KaTeX), ProfileCard
+      interactive/      React demos, one subfolder per topic
+    layouts/            BaseLayout, LessonLayout
+video/                  Remotion animations
+main.py                 Smoke test
+```
+
+## Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Python | Python 3.12, numpy, scipy, matplotlib |
+| Package manager (Python) | [uv](https://github.com/astral-sh/uv) |
+| Website | [Astro 5](https://astro.build) (static) + React 18 + Tailwind CSS 3 |
+| Math rendering | KaTeX |
+| Video | [Remotion 4](https://remotion.dev) |
+| Deployment | Netlify (`website/` dir → `dist/`) |

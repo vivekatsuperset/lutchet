@@ -1,0 +1,575 @@
+---
+import { Code } from "astro/components";
+import LessonLayout from "../../../layouts/LessonLayout.astro";
+import Math from "../../../components/ui/Math.astro";
+import KoenigsbergBridges from "../../../components/interactive/graph-theory/KoenigsbergBridges";
+
+const CODE_GRAPH = `from dataclasses import dataclass, field
+from collections import defaultdict, deque
+
+@dataclass
+class Graph:
+    """Undirected multigraph. Parallel edges are preserved."""
+    _adj: dict[str, list[str]] = field(default_factory=lambda: defaultdict(list))
+
+    def add_edge(self, u: str, v: str) -> None:
+        self._adj[u].append(v)
+        self._adj[v].append(u)
+
+    def degree(self, node: str) -> int:
+        return len(self._adj[node])
+
+    def is_connected(self) -> bool:
+        if not self._adj: return True
+        start = next(iter(self._adj))
+        visited, queue = {start}, deque([start])
+        while queue:
+            for v in self._adj[queue.popleft()]:
+                if v not in visited:
+                    visited.add(v)
+                    queue.append(v)
+        return len(visited) == len(self._adj)
+
+    def odd_degree_nodes(self) -> list[str]:
+        return [n for n in self._adj if self.degree(n) % 2 == 1]
+`;
+
+const CODE_EULER = `def has_eulerian_circuit(g: Graph) -> bool:
+    """Euler's theorem: connected + every node even-degree."""
+    return g.is_connected() and len(g.odd_degree_nodes()) == 0
+
+def has_eulerian_path(g: Graph) -> bool:
+    """Connected + 0 or 2 odd-degree nodes."""
+    return g.is_connected() and len(g.odd_degree_nodes()) in (0, 2)
+
+# Königsberg, 1736
+g = Graph()
+for _ in range(2): g.add_edge("N", "K")   # North ↔ Kneiphof × 2
+for _ in range(2): g.add_edge("S", "K")   # South ↔ Kneiphof × 2
+g.add_edge("K", "L")                       # Kneiphof ↔ Lomse
+g.add_edge("N", "L")                       # North ↔ Lomse
+g.add_edge("S", "L")                       # South ↔ Lomse
+
+print({n: g.degree(n) for n in "NSKL"})   # {'N': 3, 'S': 3, 'K': 5, 'L': 3}
+print(has_eulerian_path(g))                # False
+`;
+---
+
+<LessonLayout
+  title="Königsberg, 1736"
+  description="How Leonhard Euler solved a parlour puzzle no one else could, and accidentally invented graph theory."
+  subject="Graph Theory · Python"
+  lessonNumber={3}
+>
+
+<!-- ============================================================ S1: THE HOOK -->
+
+<section class="relative min-h-[60vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
+  <!-- Abstraction motif: river, land masses condensing into a graph -->
+  <div class="absolute inset-0 overflow-hidden opacity-[0.09]">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <!-- River bands -->
+      <rect x="0" y="320" width="1400" height="40" fill="#c8a44a" opacity="0.25"/>
+      <rect x="0" y="420" width="1400" height="40" fill="#c8a44a" opacity="0.25"/>
+      <!-- Ghosted city blocks (left side) -->
+      <g stroke="#c8a44a" stroke-width="0.8" fill="none" opacity="0.5">
+        <rect x="120" y="180" width="60" height="90"/>
+        <rect x="200" y="200" width="80" height="70"/>
+        <rect x="160" y="480" width="90" height="80"/>
+        <rect x="280" y="500" width="70" height="60"/>
+        <rect x="380" y="360" width="80" height="50"/>
+        <rect x="490" y="360" width="60" height="50"/>
+      </g>
+      <!-- Graph emerging (right side) -->
+      <g stroke="#c8a44a" fill="#c8a44a" opacity="0.9">
+        <!-- Nodes -->
+        <circle cx="900"  cy="230" r="14" fill="none" stroke-width="2"/>
+        <circle cx="900"  cy="550" r="14" fill="none" stroke-width="2"/>
+        <circle cx="760"  cy="390" r="14" fill="none" stroke-width="2"/>
+        <circle cx="1040" cy="390" r="14" fill="none" stroke-width="2"/>
+        <!-- Edges -->
+        <path d="M892 242 Q835 310 768 382" stroke-width="1.5" fill="none"/>
+        <path d="M908 244 Q852 318 776 386" stroke-width="1.5" fill="none"/>
+        <path d="M892 538 Q835 470 768 398" stroke-width="1.5" fill="none"/>
+        <path d="M908 536 Q852 464 776 394" stroke-width="1.5" fill="none"/>
+        <line x1="774" y1="390" x2="1026" y2="390" stroke-width="1.5"/>
+        <path d="M914 240 Q975 310 1032 380" stroke-width="1.5" fill="none"/>
+        <path d="M914 540 Q975 470 1032 400" stroke-width="1.5" fill="none"/>
+      </g>
+      <!-- Transformation arrow -->
+      <g stroke="#c8a44a" fill="#c8a44a" opacity="0.45">
+        <line x1="600" y1="390" x2="700" y2="390" stroke-width="1.5"/>
+        <polygon points="700,390 692,384 692,396" />
+      </g>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-amber/60 tracking-widest mb-6">KÖNIGSBERG · EAST PRUSSIA · 1736</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      A parlour puzzle no citizen can solve. Can you cross all seven
+      bridges without crossing any twice? Mathematicians across Europe
+      have tried. All have failed.
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      Leonhard Euler answers the question by
+      <span class="text-amber not-italic font-semibold"> refusing to look at the bridges at all.</span>
+    </p>
+  </div>
+</section>
+
+<section class="bg-navy-medium border-b border-ivory-dim/10 py-6 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto flex items-center justify-between gap-6">
+    <p class="text-ivory/60 text-base">Part of <em>Graph Theory</em>: four standalone stories tracing the mathematics of connection.</p>
+    <a href="/lessons/graph-theory/"
+       class="shrink-0 font-sans text-xs tracking-widest uppercase text-amber/60 hover:text-amber transition-colors">
+      See all four &#8594;
+    </a>
+  </div>
+</section>
+
+
+<!-- =========================================================== S2: THE CITY -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The City and the Puzzle</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Seven bridges, four land masses, and a walk nobody could quite finish.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Königsberg in 1736 was a prosperous merchant city in East Prussia, sitting
+      on both banks of the Pregel river. Two islands sat in the river's middle:
+      <strong class="text-amber">Kneiphof</strong>, the larger one, home to the
+      cathedral and university, and <strong class="text-amber">Lomse</strong>, a
+      smaller island to the east. Seven bridges connected these four land masses.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Sunday walks were a local institution. The puzzle became a fixture of
+      Königsberg parlours: <em>could you take a walk through the city that
+      crossed each bridge exactly once, and returned you to where you started?</em>
+      People tried. They tried with string and paper. They tried over dinner and
+      over brandy. Nobody produced such a walk. Nobody could prove one was
+      impossible either.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">The puzzle, precisely stated</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Starting anywhere in the city, is it possible to take a walk that crosses
+        each of the seven bridges exactly once and returns you to the same place?
+        This is not a riddle. There is no trick wording. It's a genuine question
+        about the geometry of a real city.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================= S3: THE MATHEMATICIAN -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Reluctant Mathematician</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Leonhard Euler was not, at first, impressed.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Leonhard Euler was twenty-nine, already famous across European scientific
+      circles, and working at the Imperial Academy of Sciences in St. Petersburg.
+      He was the most prolific mathematician who has ever lived, and he was about
+      to become more so: in a career that spanned five decades he would produce
+      so much original work that publishing the backlog took another forty years
+      after his death.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      When the mayor of Danzig, Carl Ehler, wrote to Euler asking about the
+      bridges, Euler's first reaction was dismissive. In a reply, he called the
+      problem <em>&ldquo;banal&rdquo;</em>: a parlour game, not real mathematics.
+      Real mathematics, as everyone understood it, meant calculus, differential
+      equations, and the motion of celestial bodies. The shapes of a city were a
+      matter for engineers.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      But he kept thinking about it. What caught his attention was not the
+      puzzle itself but the fact that none of his existing tools could touch it.
+      Geometry as the Greeks had built it measured lengths and angles. Algebra
+      counted quantities. The bridges of Königsberg resisted both. The question
+      was about <em>how things connect</em>, and that was a question no one had
+      a language for.
+    </p>
+
+    <blockquote class="pullquote">
+      &ldquo;This question is so banal, but seemed to me worthy of attention, in
+      that neither geometry, nor algebra, nor the art of counting was sufficient
+      to solve it.&rdquo;
+      <footer class="mt-2 text-sm not-italic text-ivory-dim/60">Euler, letter to Giovanni Marinoni, 13 March 1736</footer>
+    </blockquote>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mt-8">
+      Later that year he wrote up his solution. The paper, <em>Solutio
+      problematis ad geometriam situs pertinentis</em> (&ldquo;The solution of
+      a problem relating to the geometry of position&rdquo;) would be published
+      in 1741. It is regarded today as the founding document of graph theory and
+      of topology. Euler himself thought of it as a curiosity.
+    </p>
+  </div>
+</section>
+
+
+<!-- =========================================================== S4: THE INSIGHT -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Abstraction as a Weapon</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Everyone was thinking about the bridges. Euler stopped thinking about the bridges.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The obvious approach is to try every possible route through the city and
+      see whether any of them work. With seven bridges there are only a few
+      thousand orderings, few enough for a human to rule out in an afternoon. That's
+      what the citizens had been doing.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Euler made a different move. He noticed that <strong class="text-amber">it
+      cannot possibly matter how the bridges are laid out.</strong> Whether
+      Krämerbrücke curves gracefully over the Pregel or runs dead straight,
+      whether Kneiphof is large or small, whether the river is fast or slow:
+      none of it changes the answer. What changes the answer is only which land
+      masses are connected to which, and how many times.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      So erase the map. Replace each land mass with a dot. Replace each bridge
+      with a line. You are left with a picture containing four dots and seven
+      lines. The city is gone. Only the connections remain. The question that
+      seemed to be about a Prussian city turns out to be about this tiny
+      diagram, and nothing else.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">Why this move matters</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        This is the move that made graph theory a field. Almost every algorithm
+        that follows (Dijkstra's shortest path, Ford-Fulkerson max-flow,
+        PageRank, the BGP routing tables that hold the internet together)
+        inherits Euler's insight. The geography vanishes. Only the
+        <em>structure of connection</em> remains, and that structure is what
+        governs the answer.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6 mt-8">
+      Below is Königsberg after Euler has finished with it. Four nodes labelled
+      <span class="font-mono text-amber">N</span>,
+      <span class="font-mono text-amber">S</span>,
+      <span class="font-mono text-amber">K</span>,
+      <span class="font-mono text-amber">L</span>. Seven bridges between them.
+      Click any bridge to add or remove it, and watch the puzzle change.
+    </p>
+
+    <KoenigsbergBridges client:load />
+
+    <p class="text-sm text-ivory-dim mt-6 leading-relaxed">
+      Try it: remove one of the Kneiphof bridges. Suddenly a walk becomes possible,
+      but only if you start at one of the remaining odd-degree land masses. Remove two
+      bridges of the right pair, and you can even return home. The question "is the
+      walk possible?" collapses into a question about the parity of four numbers.
+    </p>
+  </div>
+</section>
+
+
+<!-- ========================================================= S5: THE THEOREM -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Euler's Theorem</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      One rule, proved in a few lines, settles every city in the world.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The <strong class="text-amber">degree</strong> of a node is the number of
+      edges meeting at it. For Königsberg, the four degrees are
+      <Math formula={String.raw`3, 3, 5, 3`} />. The sum of degrees is always
+      twice the number of edges, because every edge has two endpoints.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Now imagine you are walking the graph, crossing every edge exactly once.
+      Consider any node that is not your start or end. Every time you walk
+      into it, you must eventually walk out. The edges pair up. So every
+      intermediate node must have an <strong class="text-amber">even</strong>
+      number of edges meeting it.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      The start and end are the only nodes that can get away with an odd degree.
+      If the walk is a <em>circuit</em> (returning to the starting node), even
+      that exemption disappears, because the start is also the end.
+    </p>
+
+    <div class="bg-amber/5 border-2 border-amber/30 rounded-xl p-8 my-8 text-center">
+      <p class="text-xs text-amber font-sans tracking-widest uppercase mb-4">Euler's Theorem (1736)</p>
+      <p class="font-serif text-xl text-ivory leading-relaxed mb-4">
+        A connected graph has an Eulerian <em>circuit</em> if and only if
+        every node has even degree. It has an Eulerian <em>path</em> if and
+        only if exactly zero or two nodes have odd degree.
+      </p>
+      <Math formula={String.raw`|\{v : \deg(v) \text{ is odd}\}| \in \{0, 2\} \iff \text{an Eulerian path exists}`} display={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Translated out of the symbols, here is what the theorem says.
+      Stand at every node in turn and count how many edges meet it.
+      Some counts will come out even, some odd. Now tally just the
+      odd ones. If that tally is zero, you can trace the whole figure
+      in one continuous sweep without lifting your pencil, and you
+      will end up back where you started. If the tally is exactly
+      two, you can still trace the whole figure in one sweep, but
+      you must start at one of the two odd-count nodes and finish at
+      the other. Any other tally (one, four, six, seventeen) and the
+      task is flatly impossible.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Why is the rule this clean? Because of the walking-in-walking-out
+      argument above: every node except possibly your start and your
+      end has to have edges that pair up, so its degree has to be
+      even. The odd-degree nodes, if any, are forced to sit at the
+      two ends of your walk. You cannot have more than two of them
+      because you only have one pencil, one start, one end. That is
+      the whole content of the theorem: a global, existence-type
+      question about walks in an arbitrarily complicated graph,
+      reduced to an arithmetic check you can do by counting on your
+      fingers.
+    </p>
+
+    <h3 class="text-2xl font-serif text-amber mb-4">Applied to Königsberg</h3>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-4">
+      Count the bridges at each land mass:
+    </p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {[
+        { label: "North bank",  deg: 3 },
+        { label: "South bank",  deg: 3 },
+        { label: "Kneiphof",    deg: 5 },
+        { label: "Lomse",       deg: 3 },
+      ].map(({ label, deg }) => (
+        <div class="border border-amber/30 rounded-lg p-4 text-center">
+          <p class="font-serif text-ivory text-lg mb-1">{label}</p>
+          <p class="font-mono text-3xl text-amber">{deg}</p>
+          <p class="font-mono text-xs text-amber/70 mt-1">odd</p>
+        </div>
+      ))}
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Four odd-degree nodes. Euler's rule demands zero or two. The Königsberg
+      walk cannot be done, not because nobody has been clever enough, but
+      because the numbers forbid it. This is the first <em>impossibility proof</em>
+      in graph theory: a rigorous argument that no amount of cleverness will
+      solve a problem, because the structure itself forbids the solution.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">What Euler quietly invented</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        The theorem is a small thing. The habit of mind is not. Euler had
+        shown that a physical question could be translated into a purely
+        combinatorial one, solved there, and the answer trusted. Two centuries
+        later, this is how we reason about the internet, logistics networks,
+        molecular chemistry, and the connection patterns in neural networks.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S6: PYTHON -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python: Build It</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      A graph in forty lines. Euler's theorem in four.
+    </p>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part A: A graph, from scratch</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        An undirected multigraph backed by an adjacency list. Degree falls
+        out of list length. Connectivity falls out of BFS.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>core.py</span>
+          <span class="text-amber/60">Notebook 06</span>
+        </div>
+        <Code code={CODE_GRAPH} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part B: Euler and Königsberg</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Two predicates for the theorem. Build Königsberg as Euler would have
+        drawn it. Verify the puzzle is impossible.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>koenigsberg.py</span>
+          <span class="text-amber/60">Notebook 06</span>
+        </div>
+        <Code code={CODE_EULER} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="border border-ivory-dim/10 rounded-lg p-5 flex items-start gap-4">
+      <div class="text-2xl">&#128211;</div>
+      <div>
+        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 06: Königsberg &amp; Euler</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          Build the graph. Count the degrees. Verify the puzzle is impossible.
+          Then modify the bridges. Which edits make a walk possible? Which
+          make a circuit possible? Work it out and let the code confirm.
+        </p>
+        <code class="text-sm font-mono text-steel mt-2 block">notebooks/06_graph_theory_koenigsberg.ipynb</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- =========================================================== S7: FORWARD -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">What Euler Started</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      The abstraction became a discipline. The discipline became infrastructure.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Graph theory as a field took shape over the next two centuries: quiet,
+      academic, and largely unnoticed. Gustav Kirchhoff used graphs to analyse
+      electrical circuits in 1845. Arthur Cayley used them to count chemical
+      isomers in 1857. In 1936, the Hungarian mathematician
+      <strong class="text-amber">Dénes König</strong> wrote the first textbook
+      devoted to the subject, eight years before the Allies landed at Normandy,
+      and two decades before the algorithms that would make graphs indispensable.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Then the applications arrived all at once. The Cold War motivated
+      network-flow theory at RAND. The internet turned every packet into
+      a graph-routing problem. Web search turned every page into a node in
+      a graph with billions of edges. Today, the abstraction Euler invented
+      to dismiss a parlour puzzle is the mathematical substrate of modern
+      infrastructure. You have used it every time you have opened a web browser.
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-8">
+      {[
+        { era: "Next story", title: "Shortest paths",  desc: "Dijkstra's algorithm, and the networks that made it matter." },
+        { era: "Then",       title: "Flow and cuts",   desc: "Max-flow, min-cut, and the Cold War study that gave us both." },
+        { era: "Finally",    title: "Random walks",    desc: "PageRank built Google this way. Modern LLMs retrieve knowledge this way." },
+      ].map(({ era, title, desc }) => (
+        <div class="border border-ivory-dim/10 rounded-xl p-5">
+          <p class="font-mono text-xs text-amber/60 tracking-widest uppercase mb-2">{era}</p>
+          <p class="font-sans font-semibold text-ivory text-base mb-2">{title}</p>
+          <p class="font-sans text-sm text-ivory/80 leading-relaxed">{desc}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================================================== S8: FURTHER READING -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Further Reading</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      A short, opinionated bibliography. Start with Euler himself.
+    </p>
+
+    <div class="space-y-6">
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Leonhard Euler, <em>Solutio problematis ad geometriam situs pertinentis</em> (1741)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The 1736 paper itself, in Euler's Latin and in modern English
+          translations. Shorter than you expect. A lesson in how to write
+          mathematics plainly.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Reinhard Diestel, <em>Graph Theory</em> (Springer, 5th ed. 2017)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The modern standard reference. Free PDF from the author. Start with
+          chapter 1 for a rigorous treatment of what we sketched above.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Robin Wilson, <em>Introduction to Graph Theory</em> (Longman, 5th ed. 2010)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The gentlest introduction to the field. Historical asides on Euler
+          and Königsberg. Accessible to anyone who made it through this lesson.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-steel/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Alexander Schrijver, <em>On the History of Combinatorial Optimization (till 1960)</em>
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Essential if you want to know what actually happened at RAND, what
+          was known during WWII, and what was retroactively attributed. Long,
+          careful, and very fair. Sets up the next three stories in this topic.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================== EPILOGUE -->
+
+<section class="bg-navy py-24 px-8 md:px-20 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="font-serif text-3xl text-ivory leading-relaxed mb-8">
+      Euler dismissed the puzzle as banal. In solving it, he founded two
+      branches of mathematics, and supplied the language for an answer to
+      problems that did not yet exist.
+    </p>
+    <p class="text-ivory-dim text-base mt-8 leading-relaxed">
+      The bridges of Königsberg no longer stand. Two were destroyed in the
+      Second World War, and the city itself was renamed Kaliningrad after it
+      became part of the Soviet Union. The graph, however, is immortal.
+    </p>
+  </div>
+</section>
+
+</LessonLayout>

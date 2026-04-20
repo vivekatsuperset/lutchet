@@ -1,0 +1,689 @@
+---
+import { Code } from "astro/components";
+import LessonLayout from "../../../layouts/LessonLayout.astro";
+import Math from "../../../components/ui/Math.astro";
+import SovietRail from "../../../components/interactive/graph-theory/SovietRail";
+import AugmentingPaths from "../../../components/interactive/graph-theory/AugmentingPaths";
+
+const CODE_FLOW_NETWORK = `from collections import defaultdict
+from dataclasses import dataclass, field
+
+@dataclass
+class FlowNetwork:
+    """Directed graph with non-negative edge capacities."""
+    _cap: dict[str, dict[str, float]] = field(
+        default_factory=lambda: defaultdict(dict)
+    )
+
+    def add_edge(self, u: str, v: str, capacity: float) -> None:
+        if capacity < 0:
+            raise ValueError(f"Negative capacity {capacity} not allowed.")
+        if u == v:
+            raise ValueError(f"Self-loop on {u} is not a flow edge.")
+        self._cap[u][v] = self._cap[u].get(v, 0.0) + capacity
+
+    def capacity(self, u: str, v: str) -> float:
+        return self._cap.get(u, {}).get(v, 0.0)
+
+    @property
+    def nodes(self) -> list[str]:
+        return list(self._cap.keys())
+`;
+
+const CODE_MAX_FLOW = `from collections import deque
+
+def max_flow(net: FlowNetwork, source: str, sink: str):
+    """Edmonds-Karp: Ford-Fulkerson with a BFS augmenting path."""
+    residual = {u: {} for u in net.nodes}
+    for u in net.nodes:
+        for v, c in net._cap[u].items():
+            residual[u][v] = residual[u].get(v, 0.0) + c
+            residual[v].setdefault(u, 0.0)  # reverse edge, cap 0
+
+    def bfs():
+        prev = {source: None}
+        q = deque([source])
+        while q:
+            u = q.popleft()
+            if u == sink:
+                break
+            for v, cap in residual[u].items():
+                if cap > 0 and v not in prev:
+                    prev[v] = u
+                    q.append(v)
+        if sink not in prev:
+            return None
+        path, node = [], sink
+        while node is not None:
+            path.append(node)
+            node = prev[node]
+        return list(reversed(path))
+
+    value = 0.0
+    while (path := bfs()) is not None:
+        bottleneck = min(residual[path[i]][path[i + 1]]
+                         for i in range(len(path) - 1))
+        for i in range(len(path) - 1):
+            u, v = path[i], path[i + 1]
+            residual[u][v] -= bottleneck
+            residual[v][u] += bottleneck
+        value += bottleneck
+    return value
+`;
+---
+
+<LessonLayout
+  title="Soviet Rail, 1955"
+  description="How RAND analysts modelled the Soviet rail network as a graph, asked which links to bomb, and accidentally commissioned the max-flow / min-cut theorem."
+  subject="Graph Theory · Python"
+  lessonNumber={3}
+>
+
+<!-- ============================================================ S1: THE HOOK -->
+
+<section class="relative min-h-[60vh] flex flex-col justify-end overflow-hidden bg-navy px-8 md:px-20 pb-20 pt-20">
+  <div class="absolute inset-0 overflow-hidden opacity-[0.08]">
+    <svg viewBox="0 0 1400 700" preserveAspectRatio="xMidYMid slice"
+         xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+      <g stroke="#e06464" fill="none" stroke-width="1">
+        <!-- A stylised rail network, east to west -->
+        <circle cx="1260" cy="340" r="9"/>
+        <circle cx="1120" cy="140" r="9"/>
+        <circle cx="980"  cy="300" r="9"/>
+        <circle cx="920"  cy="500" r="9"/>
+        <circle cx="740"  cy="200" r="9"/>
+        <circle cx="700"  cy="420" r="9"/>
+        <circle cx="500"  cy="140" r="9"/>
+        <circle cx="500"  cy="340" r="9"/>
+        <circle cx="480"  cy="560" r="9"/>
+        <circle cx="280"  cy="240" r="9"/>
+        <circle cx="260"  cy="480" r="9"/>
+        <circle cx="120"  cy="360" r="9"/>
+        <line x1="1260" y1="340" x2="1120" y2="140" stroke-width="2"/>
+        <line x1="1260" y1="340" x2="980"  y2="300" stroke-width="2"/>
+        <line x1="1260" y1="340" x2="920"  y2="500" stroke-width="2"/>
+        <line x1="1120" y1="140" x2="980"  y2="300"/>
+        <line x1="1120" y1="140" x2="740"  y2="200"/>
+        <line x1="980"  y1="300" x2="740"  y2="200"/>
+        <line x1="980"  y1="300" x2="500"  y2="340"/>
+        <line x1="920"  y1="500" x2="700"  y2="420"/>
+        <line x1="920"  y1="500" x2="480"  y2="560"/>
+        <line x1="740"  y1="200" x2="500"  y2="140" stroke-width="2"/>
+        <line x1="740"  y1="200" x2="500"  y2="340"/>
+        <line x1="700"  y1="420" x2="480"  y2="560"/>
+        <line x1="500"  y1="140" x2="280"  y2="240" stroke-width="2"/>
+        <line x1="500"  y1="340" x2="280"  y2="240"/>
+        <line x1="500"  y1="340" x2="260"  y2="480"/>
+        <line x1="480"  y1="560" x2="260"  y2="480"/>
+        <line x1="280"  y1="240" x2="120"  y2="360" stroke-width="2"/>
+        <line x1="260"  y1="480" x2="120"  y2="360"/>
+      </g>
+    </svg>
+  </div>
+
+  <p class="font-mono text-xs text-amber/60 tracking-widest mb-6">RAND CORPORATION · SANTA MONICA · 1955</p>
+
+  <div class="max-w-3xl">
+    <p class="font-serif text-3xl md:text-4xl lg:text-5xl text-ivory leading-tight mb-8">
+      Ted Harris and Frank Ross are staring at a map of the Soviet rail
+      network. The question on the desk is not abstract. If war comes,
+      which rail lines do we bomb first?
+    </p>
+    <p class="font-serif text-xl text-ivory-dim italic">
+      The mathematical answer to their question was being invented one
+      floor away, by two men writing a paper called
+      <span class="text-amber not-italic font-semibold">Maximal Flow Through a Network.</span>
+    </p>
+  </div>
+</section>
+
+<section class="bg-navy-medium border-b border-ivory-dim/10 py-6 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto flex items-center justify-between gap-6">
+    <p class="text-ivory/60 text-base">Part of <em>Graph Theory</em>: four standalone stories tracing the mathematics of connection.</p>
+    <a href="/lessons/graph-theory/"
+       class="shrink-0 font-sans text-xs tracking-widest uppercase text-amber/60 hover:text-amber transition-colors">
+      See all four &#8594;
+    </a>
+  </div>
+</section>
+
+
+<!-- =========================================================== S2: THE STUDY -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Study on the Desk</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Forty-four vertices, one hundred and five edges, and a classified stamp on the cover.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      In late 1954, the United States Air Force asked the RAND
+      Corporation to evaluate the capacity of the Soviet railway network
+      to move supplies from the Soviet interior to Eastern Europe. The
+      study was assigned to <strong class="text-amber">Theodore Harris</strong>,
+      a mathematician at RAND, and <strong class="text-amber">Frank Ross</strong>,
+      a retired Air Force general. They finished their report in October
+      1955 under a title that gave nothing away:
+      <em>Fundamentals of a Method for Evaluating Rail Net Capacities.</em>
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Inside was a graph. Forty-four vertices, each a major rail junction
+      in the Soviet Union and its satellites. One hundred and five edges,
+      each a section of track. Every edge had a number attached to it,
+      the number of freight trains it could move per day, computed from
+      track count, signalling capacity, grade, and the locomotives
+      available to the district.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Harris and Ross asked two questions. First: what is the maximum
+      tonnage per day that can move from the Soviet interior to the
+      Eastern European border? Second, and this was the operational
+      question: which small set of rail segments, if destroyed, would
+      reduce that capacity the most?
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">The map is now public.</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        The Harris and Ross report was declassified in 1999. The map of
+        the Soviet rail network they used, and the labelled "bottleneck"
+        the study identified, are in the public domain. If you want to
+        see the original, search for <em>Harris Ross 1955 Soviet rail</em>;
+        the RAND archive hosts a PDF. The bottleneck they found ran
+        through a corridor near the present-day Ukraine-Poland border.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S3: PROBLEM -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Question, Precisely</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Directed edges, capacities, a source, a sink, and a conservation law at every other node.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      A <strong class="text-amber">flow network</strong> is a directed
+      graph in which every edge <Math formula={String.raw`u \to v`} />
+      carries a non-negative number <Math formula={String.raw`c(u, v)`} />
+      called its <em>capacity</em>. Two distinguished nodes are the
+      <em>source</em> <Math formula={String.raw`s`} /> and the
+      <em>sink</em> <Math formula={String.raw`t`} />. A <em>flow</em> is
+      an assignment of a number <Math formula={String.raw`f(u, v) \ge 0`} />
+      to every edge such that no edge exceeds its capacity and, at every
+      node other than <Math formula={String.raw`s`} /> and
+      <Math formula={String.raw`t`} />, what flows in equals what flows
+      out.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The <strong class="text-amber">maximum flow</strong> problem asks
+      for the flow that pushes as many units as possible from
+      <Math formula={String.raw`s`} /> to <Math formula={String.raw`t`} />.
+      An <strong class="text-amber">s-t cut</strong> is a partition of
+      the nodes into two sets <Math formula={String.raw`S`} /> and
+      <Math formula={String.raw`T`} /> with <Math formula={String.raw`s \in S`} />
+      and <Math formula={String.raw`t \in T`} />. The <em>capacity</em>
+      of a cut is the sum of the capacities of edges going from
+      <Math formula={String.raw`S`} /> to <Math formula={String.raw`T`} />.
+      The <strong class="text-amber">minimum cut</strong> is the cut of
+      smallest capacity.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Max flow is the question Harris and Ross asked first. Min cut is
+      the question they cared about second, and more. The two questions
+      turn out to have the same answer.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S4: DEMO -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Find the Bottleneck</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Ten cities, a westward flow, and a single question: which rails matter most?
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Below is a stylised version of the Harris-Ross network. Moscow is
+      the source, a notional Western Frontier is the sink, and supply
+      flows westward through ten cities. Every edge shows
+      <code class="text-steel text-sm">flow / capacity</code>. Gold
+      edges carry some of the maximum flow; red edges are the min cut.
+      Click an edge label to raise its capacity by five; shift-click to
+      lower it by five. Watch the red edges move as you work.
+    </p>
+
+    <SovietRail client:load />
+
+    <p class="text-sm text-ivory-dim mt-6 leading-relaxed">
+      Two things worth trying. Raise the capacity of a red edge; the
+      red set almost always shifts somewhere else, because cutting a
+      bottleneck only helps until a new one becomes binding. Set every
+      edge out of Moscow to zero in turn; the max flow collapses to
+      zero. The min cut is never larger than the source's total outgoing
+      capacity, because that is itself a cut.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S5: DUALITY -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Duality: Max Flow Equals Min Cut</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      One of the cleanest theorems in combinatorial optimisation.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      First, the easy direction. Any flow from
+      <Math formula={String.raw`s`} /> to <Math formula={String.raw`t`} />
+      has to cross every s-t cut, so its value is at most the capacity
+      of any cut:
+    </p>
+
+    <div class="bg-navy-medium border border-amber/20 rounded-lg p-6 my-8 text-center">
+      <Math formula={String.raw`|f| \le \operatorname{cap}(S, T)`} displayMode={true} />
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Read that inequality aloud. On the left, <Math formula={String.raw`|f|`} />
+      is the total value of whatever flow you happened to construct:
+      how many units per day you successfully pushed from source to
+      sink. On the right, <Math formula={String.raw`\operatorname{cap}(S, T)`} />
+      is the total capacity of every pipe that crosses some wall you
+      drew splitting the source side from the sink side. The claim is
+      the obvious one: every single unit of flow you sent across the
+      network had to, at some point, cross that wall, because the
+      source is on one side and the sink is on the other. So your
+      flow cannot possibly exceed the total carrying capacity of the
+      pipes that cross it.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Different walls give different bounds. Draw a loose wall, one
+      that crosses a wide section of the network where pipes are
+      generous, and you get a loose, unhelpful upper bound on the
+      flow. Draw a tight wall, one that slices through a narrow
+      bottleneck, and you get a tight bound. Every wall you can draw
+      is an upper bound on every flow you can push. Every flow you
+      push is, by symmetry, a lower bound on the capacity of every
+      possible wall. The two sides pin each other.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The miracle, sitting in the amber box below, is that the upper
+      bounds and lower bounds actually meet. The tightest wall you
+      can draw has the same capacity as the fattest flow you can
+      push. Not close. Exactly the same.
+    </p>
+
+    <div class="bg-amber/5 border-2 border-amber/30 rounded-xl p-8 my-10 text-center">
+      <p class="text-xs text-amber font-sans tracking-widest uppercase mb-4">Max-flow / min-cut theorem (Ford &amp; Fulkerson, 1956)</p>
+      <p class="font-serif text-xl text-ivory leading-relaxed">
+        In any flow network, the value of the maximum flow from
+        <Math formula={String.raw`s`} /> to <Math formula={String.raw`t`} />
+        equals the capacity of the minimum <Math formula={String.raw`s`} />-<Math formula={String.raw`t`} />
+        cut.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Why this matters: a question about shipping (how much can flow?) is
+      answered by a question about sabotage (what is the cheapest way to
+      break the network?). For Harris and Ross this was more than a
+      curiosity. Their operational question was the dual of the shipping
+      question they had been asked. The same computation answered both.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The proof is constructive. If you have a maximum flow, the
+      algorithm below gives you a witness min cut for free: the set
+      <Math formula={String.raw`S`} /> of nodes still reachable from
+      <Math formula={String.raw`s`} /> in the residual graph, and the
+      edges crossing from <Math formula={String.raw`S`} /> to its
+      complement. That is exactly how the red edges in the demo are
+      computed.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S6: ALGORITHM -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">The Algorithm: Augmenting Paths</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      Push flow along a path. Repeat until there is no path left to push along.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The key construct is the <strong class="text-amber">residual
+      graph</strong>. Start with a copy of the network. Whenever you
+      push <Math formula={String.raw`\delta`} /> units along an edge
+      <Math formula={String.raw`u \to v`} />, decrease its residual
+      capacity by <Math formula={String.raw`\delta`} /> and
+      <em>increase</em> the residual capacity of the reverse edge
+      <Math formula={String.raw`v \to u`} /> by the same amount. The
+      reverse edge is what lets the algorithm "take back" a bad
+      decision: a later augmenting path can route flow back through
+      <Math formula={String.raw`v \to u`} />, effectively cancelling
+      part of an earlier choice.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The reverse-edge trick is the subtle part, so here is the
+      intuition. Suppose at step three you pushed ten units through
+      Kiev because it looked locally like a good idea. At step
+      seven you realise that those ten units would have been better
+      spent going through Warsaw instead. A naive algorithm would be
+      stuck: it has already committed. The residual graph's reverse
+      edges say: fine, push ten units <em>backwards</em> out of Kiev
+      on this new path, which cancels the earlier commitment, and
+      now you are free to route those same ten units the better
+      way. You never actually run the rails backwards; the reverse
+      edge is bookkeeping that lets the algorithm undo its own
+      mistakes without restarting.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The <strong class="text-amber">Ford-Fulkerson method</strong> is
+      then: find any path from <Math formula={String.raw`s`} /> to
+      <Math formula={String.raw`t`} /> in the residual graph, push as
+      much flow as the bottleneck edge allows, repeat. When no
+      augmenting path exists, you are done.
+    </p>
+
+    <div class="callout">
+      <p class="callout-title">Why BFS, not DFS</p>
+      <p class="text-sm text-ivory/80 leading-relaxed">
+        Ford and Fulkerson did not specify how to find the augmenting
+        path. A depth-first search can, on networks with irrational
+        capacities, fail to terminate; a famous three-edge example by
+        Zwick converges to a flow value that is only part of the true
+        maximum. The fix, from Jack Edmonds and Richard Karp in 1972,
+        is to choose the <em>shortest</em> augmenting path each time,
+        which a BFS gives you for free. The resulting
+        <strong class="text-amber">Edmonds-Karp algorithm</strong>
+        terminates in at most <Math formula={String.raw`O(V E^2)`} />
+        iterations, independent of the capacity values.
+      </p>
+    </div>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Step through it on the Soviet-rail graph. Each blue path is the
+      current BFS augmenting path. The label on each edge shows the
+      cumulative flow. The number on the right is the total value of
+      the flow so far. When the frontier stops expanding to the sink,
+      the algorithm halts, and that number is the maximum.
+    </p>
+
+    <AugmentingPaths client:load />
+
+    <p class="text-sm text-ivory-dim mt-6 leading-relaxed">
+      Notice that the paths BFS finds are the ones with the fewest
+      edges, not the ones with the most capacity. That is fine: every
+      augmentation increases the flow by a positive integer (given
+      integer capacities), and no augmentation ever decreases it, so
+      the algorithm converges in a bounded number of steps.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S7: PYTHON -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Python: Build It</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      A flow network in fifteen lines. Edmonds-Karp in thirty.
+    </p>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part A: A flow network</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        A nested dictionary
+        <code class="text-steel text-sm">_cap[u][v]</code> stores the
+        capacity of each directed edge. Negative capacities and
+        self-loops are rejected at insert time.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>flow.py</span>
+          <span class="text-amber/60">Notebook 08</span>
+        </div>
+        <Code code={CODE_FLOW_NETWORK} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="mb-12">
+      <h3 class="text-2xl font-serif text-amber mb-2">Part B: Edmonds-Karp</h3>
+      <p class="text-ivory/80 mb-5 leading-relaxed">
+        Build a residual graph, BFS for an augmenting path, push the
+        bottleneck along it, repeat. The reverse-edge update is the
+        one line that makes the whole thing correct.
+      </p>
+      <div class="code-panel">
+        <div class="code-panel-header">
+          <span>flow.py</span>
+          <span class="text-amber/60">Notebook 08</span>
+        </div>
+        <Code code={CODE_MAX_FLOW} lang="python" theme="github-dark" />
+      </div>
+    </div>
+
+    <div class="border border-ivory-dim/10 rounded-lg p-5 flex items-start gap-4">
+      <div class="text-2xl">&#128211;</div>
+      <div>
+        <p class="font-sans font-semibold text-ivory mb-2 text-base">Notebook 08: Max flow and min cut</p>
+        <p class="font-sans text-sm text-ivory/80 leading-relaxed">
+          Build a toy flow network. Compute its max flow and min cut.
+          Verify they match. Then build the Soviet-rail graph and see
+          which edges the algorithm picks out as bottlenecks.
+        </p>
+        <code class="text-sm font-mono text-steel mt-2 block">notebooks/08_graph_theory_flow.ipynb</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ S8: CLASSIFIED -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Why This Was Classified</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      The theorem was open from the start. The answer it computed was not.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Ford and Fulkerson's 1956 paper is a public document, published in
+      the <em>Canadian Journal of Mathematics</em>. Anyone with a library
+      card could read the theorem and the algorithm. The mathematics was
+      never secret.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      What was secret was the <em>input</em>. The Harris-Ross report
+      carried a SECRET classification because it named specific Soviet
+      rail junctions, attached specific capacities to them, and then
+      pointed at which ones mattered. The report's central finding, the
+      bottleneck in the Soviet supply chain, was the same object that
+      Ford-Fulkerson would call a min cut. But knowing the cut existed
+      in the abstract was harmless. Knowing <em>where</em> the cut was
+      on a real map was a targeting recommendation.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      The report was declassified in 1999, forty-four years after it
+      was written, long after its operational relevance had expired.
+      What remains is a beautiful historical document: a real-world
+      problem, stated in the language of graphs, solved with an
+      algorithm that was being invented in the same building at the
+      same time.
+    </p>
+  </div>
+</section>
+
+
+<!-- ============================================================ S9: FORWARD -->
+
+<section class="py-20 px-8 md:px-20 bg-navy">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">What Flow Became</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      The theorem that answers shipping questions ended up everywhere shipping is not.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Max-flow / min-cut did become the workhorse of transportation
+      modelling. But the more striking afterlife was as a primitive in
+      problems that have nothing obviously to do with flow. Image
+      segmentation, where pixels are nodes and a min cut separates
+      foreground from background. Bipartite matching, where max flow
+      counts the largest set of compatible pairs. Network reliability,
+      where a min cut is the smallest set of edges whose failure
+      disconnects a service from its users. The theorem keeps showing
+      up because it is the combinatorial form of linear-programming
+      duality, and duality is everywhere.
+    </p>
+
+    <p class="text-lg text-ivory/90 leading-relaxed mb-6">
+      Flow is deterministic: you allocate exact capacities and compute
+      exact values. The next story asks what happens when we let go of
+      that determinism, and think of the graph as a process that moves
+      something around probabilistically. The shift from flow to random
+      walk is the shift from a single planned route to an expected
+      distribution over routes, and the mathematics that falls out of
+      it is the reason a word-probability model, trained on enough text,
+      can be coaxed into naming citations.
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-8">
+      {[
+        { era: "Next story",  title: "Random walks",   desc: "PageRank built Google this way. Modern LLMs retrieve knowledge this way." },
+        { era: "Back to",     title: "Flows & cuts",   desc: "Image segmentation, bipartite matching, network reliability, and why LP duality keeps showing up." },
+        { era: "All topics",  title: "Four algorithms", desc: "One insight from 1736 that made all of them thinkable." },
+      ].map(({ era, title, desc }) => (
+        <div class="border border-ivory-dim/10 rounded-xl p-5">
+          <p class="font-mono text-xs text-amber/60 tracking-widest uppercase mb-2">{era}</p>
+          <p class="font-sans font-semibold text-ivory text-base mb-2">{title}</p>
+          <p class="font-sans text-sm text-ivory/80 leading-relaxed">{desc}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+
+<!-- ===================================================== S10: FURTHER READING -->
+
+<section class="bg-navy-medium py-20 px-8 md:px-20">
+  <div class="max-w-3xl mx-auto">
+    <h2 class="text-4xl font-serif font-semibold text-ivory mb-4">Further Reading</h2>
+    <p class="text-ivory-dim text-lg italic mb-10">
+      One paper from 1956, one declassified report from 1955, and a history book that connects them.
+    </p>
+
+    <div class="space-y-6">
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          L. R. Ford and D. R. Fulkerson, <em>Maximal Flow Through a Network</em> (Canadian Journal of Mathematics, 1956)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The original paper. Introduces the max-flow / min-cut theorem
+          and the augmenting-path method. Short, readable, and worth
+          reading in the original notation to see how close the 1956
+          statement is to the modern one.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          T. E. Harris and F. S. Ross, <em>Fundamentals of a Method for Evaluating Rail Net Capacities</em> (RAND RM-1573, 1955; declassified 1999)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The study that motivated the theorem. Includes the 44-vertex
+          rail network, the capacity calculations, and the identified
+          bottleneck. The RAND archive hosts a scanned PDF. A genuine
+          primary source, and a rare case where a classified document
+          was released after the mathematics it inspired had become
+          textbook material.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Alexander Schrijver, <em>On the History of the Transportation and Maximum Flow Problems</em> (Mathematical Programming, 2002)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          The definitive history. Schrijver traces the intertwined lines
+          from Kantorovich and Hitchcock through Dantzig, Koopmans,
+          Harris-Ross, and Ford-Fulkerson. Essential reading if you want
+          to understand how the field actually developed, as opposed to
+          how it is usually taught.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-amber/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Cormen, Leiserson, Rivest and Stein, <em>Introduction to Algorithms</em> (MIT Press, 4th ed. 2022)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Chapter 24 on maximum flow. Clean presentation of Ford-Fulkerson,
+          Edmonds-Karp, and the max-flow / min-cut theorem with full
+          proofs. Also covers push-relabel, the faster alternative that
+          matters once the network gets large.
+        </p>
+      </div>
+
+      <div class="border-l-2 border-steel/40 pl-6">
+        <p class="font-sans font-semibold text-ivory text-base mb-1">
+          Alexander Schrijver, <em>Combinatorial Optimization: Polyhedra and Efficiency</em> (Springer, 2003)
+        </p>
+        <p class="text-sm text-ivory/70 leading-relaxed">
+          Three volumes, two thousand pages, and the most complete
+          treatment of flow and cut problems in print. Not bedside
+          reading, but the reference you reach for when a flow question
+          turns out to be subtler than it looks.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================ EPILOGUE -->
+
+<section class="bg-navy py-24 px-8 md:px-20 text-center">
+  <div class="max-w-2xl mx-auto">
+    <p class="font-serif text-3xl text-ivory leading-relaxed mb-8">
+      One report asked which rail lines to bomb. One paper asked how much
+      could flow. The answer to both was the same theorem, and the two
+      groups of authors walked past each other in the halls of the same
+      building for months before anyone noticed.
+    </p>
+    <p class="text-ivory-dim text-base mt-8 leading-relaxed">
+      Forty-four years passed before the report was public. The theorem
+      was already in every textbook.
+    </p>
+  </div>
+</section>
+
+</LessonLayout>
