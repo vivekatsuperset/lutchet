@@ -15,7 +15,7 @@ const PHASES = [
   },
   {
     label: "After Bayesian scoring",
-    sub:   "The surviving settings are scored by how well their decryption matches English letter frequencies. Probability mass collapses onto one answer.",
+    sub:   "The surviving settings are scored by how well their decryption matches German letter frequencies. Probability mass collapses onto one answer.",
     dot:   (i: number) => i < 97 ? "bg-ivory/5 scale-75" : i < 99 ? "bg-amber/30 scale-90" : "bg-amber shadow-[0_0_12px_rgba(200,164,74,0.8)]",
     count: 100,
   },

@@ -27,7 +27,7 @@ from ..enigma.rotor   import ALPHABET
 from .scoring import (
     enigma_constraint_satisfied,
     index_of_coincidence,
-    log_likelihood_english,
+    log_likelihood_german,
 )
 
 
@@ -38,7 +38,7 @@ class DecodeResult:
     position:    int            # where in the ciphertext the crib was tested
     decrypted:   str            # full decrypted message with these settings
     ioc:         float          # Index of Coincidence of decrypted text
-    log_score:   float          # log-likelihood under English model
+    log_score:   float          # log-likelihood under German model
     eliminated:  bool = False   # True if discarded by the Enigma constraint
 
     @property
@@ -137,7 +137,7 @@ class BayesianDecoder:
                     machine    = EnigmaMachine(config)
                     decrypted  = machine.encrypt(ciphertext)
                     ioc        = index_of_coincidence(decrypted)
-                    log_score  = log_likelihood_english(decrypted)
+                    log_score  = log_likelihood_german(decrypted)
 
                     results.append(DecodeResult(
                         config=config,

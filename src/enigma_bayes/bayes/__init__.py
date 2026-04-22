@@ -20,9 +20,9 @@ from .probability import (
     probability_from_odds,
 )
 from .scoring import (
-    ENGLISH_FREQUENCIES,
+    GERMAN_FREQUENCIES,
     index_of_coincidence,
-    log_likelihood_english,
+    log_likelihood_german,
     enigma_constraint_satisfied,
     weight_of_evidence,
     to_bans,
@@ -35,8 +35,8 @@ from .decoder import BayesianDecoder, DecodeResult
 __all__ = [
     "uniform_prior", "normalize", "bayesian_update", "sequential_update",
     "odds", "log_odds", "probability_from_odds",
-    "ENGLISH_FREQUENCIES",
-    "index_of_coincidence", "log_likelihood_english",
+    "GERMAN_FREQUENCIES",
+    "index_of_coincidence", "log_likelihood_german",
     "enigma_constraint_satisfied",
     "weight_of_evidence", "to_bans", "to_decibans", "from_bans",
     "bans_to_posterior_odds",

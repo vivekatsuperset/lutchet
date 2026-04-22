@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 
 // ── Pre-computed Banburismus simulation ───────────────────────────────────────
 // 6 candidate settings tested against the crib "WETTER" (weather).
-// Likelihoods are derived from Enigma constraint + English letter scoring.
+// Likelihoods are derived from Enigma constraint + German letter scoring.
 // log_updates[step][candidate] = decibans added at that step.
 // (Negative = eliminated. Surviving candidates score ~0.1–0.5 decibans/letter.)
 
@@ -22,11 +22,11 @@ const CRIB = "WETTER";
 const SCORES_BY_STEP: number[][] = [
   // start
   [0,    0,    0,    0,    0,    0   ],
-  // after W: most survive constraint (each gains ~1–2 decibans from English freq)
+  // after W: most survive constraint (each gains ~1–2 decibans from German freq)
   [1.8,  1.4,  1.6,  -999, 1.5,  1.3 ],
   // after E: constraint eliminates candidates 2,4 (E would encrypt to itself)
   [3.9,  2.7,  -999, -999, -999, 2.1 ],
-  // after T: English scoring diverges; correct setting gains faster
+  // after T: German scoring diverges; correct setting gains faster
   [6.4,  3.4,  -999, -999, -999, 2.5 ],
   // after T: second T — extra confirmation
   [9.2,  3.8,  -999, -999, -999, 2.6 ],
@@ -151,10 +151,10 @@ export default function BayesViz() {
       {/* Step commentary */}
       <div className="bg-navy rounded-lg px-4 py-3 text-xs text-ivory-dim mb-4 min-h-[3rem]">
         {step === 0 && "Uniform prior — no evidence yet. All candidates treated equally."}
-        {step === 1 && "After 'W': Most candidates survive the Enigma constraint. Small gains from English frequency."}
+        {step === 1 && "After 'W': Most candidates survive the Enigma constraint. Small gains from German frequency."}
         {step === 2 && "After 'E': Constraint eliminates 3 candidates instantly. 'E' would encrypt to itself under those settings — impossible."}
-        {step === 3 && "After first 'T': English scoring separates the survivors. The correct setting accumulates faster."}
-        {step === 4 && "After second 'T': The double-T is distinctive in English — adds strong evidence for the correct setting."}
+        {step === 3 && "After first 'T': German scoring separates the survivors. The correct setting accumulates faster."}
+        {step === 4 && "After second 'T': The double-T is distinctive in German — adds strong evidence for the correct setting."}
         {step === 5 && "After second 'E': Divergence is now decisive. The correct setting is pulling far ahead."}
         {step === 6 && "After 'R': ✓ CORRECT SETTING PAST THE 3-BAN THRESHOLD. 31 decibans ≈ 1,259:1 odds. Turing would accept this — decrypt the message."}
       </div>

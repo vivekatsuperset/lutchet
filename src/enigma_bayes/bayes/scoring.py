@@ -4,8 +4,8 @@ Scoring functions for Bayesian Enigma decoding.
 Two complementary approaches are implemented here:
 
 1. **Index of Coincidence (IoC)** — a classical cryptanalysis statistic.
-   A random substitution cipher has IoC ≈ 0.038. English plaintext has
-   IoC ≈ 0.067. A decryption attempt that yields high IoC is probably
+   A random substitution cipher has IoC ≈ 0.038. German plaintext has
+   IoC ≈ 0.076. A decryption attempt that yields high IoC is probably
    correct plaintext.
 
 2. **Turing's Bans / Decibans** — Turing's own weight-of-evidence scale.
@@ -18,19 +18,21 @@ Two complementary approaches are implemented here:
 import math
 import numpy as np
 
-# ── English letter frequencies (source: Norvig, based on Google N-grams) ─────
-ENGLISH_FREQUENCIES: dict[str, float] = {
-    "A": 0.08167, "B": 0.01492, "C": 0.02782, "D": 0.04253,
-    "E": 0.12702, "F": 0.02228, "G": 0.02015, "H": 0.06094,
-    "I": 0.06966, "J": 0.00153, "K": 0.00772, "L": 0.04025,
-    "M": 0.02406, "N": 0.06749, "O": 0.07507, "P": 0.01929,
-    "Q": 0.00095, "R": 0.05987, "S": 0.06327, "T": 0.09056,
-    "U": 0.02758, "V": 0.00978, "W": 0.02360, "X": 0.00150,
-    "Y": 0.01974, "Z": 0.00074,
+# ── German letter frequencies (source: Wikipedia, 26-letter German corpus) ────
+# Enigma traffic was German military text. Umlauts were transliterated (AE, OE,
+# UE, SS), so the 26-letter distribution is the correct model for scoring.
+GERMAN_FREQUENCIES: dict[str, float] = {
+    "A": 0.06516, "B": 0.01886, "C": 0.02732, "D": 0.05076,
+    "E": 0.16396, "F": 0.01656, "G": 0.03009, "H": 0.04577,
+    "I": 0.06550, "J": 0.00268, "K": 0.01417, "L": 0.03437,
+    "M": 0.02534, "N": 0.09776, "O": 0.02594, "P": 0.00613,
+    "Q": 0.00018, "R": 0.07003, "S": 0.07270, "T": 0.06154,
+    "U": 0.04166, "V": 0.00846, "W": 0.01921, "X": 0.00034,
+    "Y": 0.00039, "Z": 0.01134,
 }
 
-# Smoothed English frequency array (index = letter ordinal, A=0)
-_ENG_FREQ = np.array([ENGLISH_FREQUENCIES[chr(i + ord("A"))] for i in range(26)])
+# German frequency array (index = letter ordinal, A=0)
+_GER_FREQ = np.array([GERMAN_FREQUENCIES[chr(i + ord("A"))] for i in range(26)])
 
 
 def index_of_coincidence(text: str) -> float:
@@ -43,7 +45,7 @@ def index_of_coincidence(text: str) -> float:
 
     Reference values:
       - Random (uniform) text:  IC ≈ 0.0385
-      - English plaintext:      IC ≈ 0.0667
+      - German plaintext:       IC ≈ 0.0762
 
     Args:
         text: Any string; non-alphabetic characters are ignored.
@@ -59,11 +61,11 @@ def index_of_coincidence(text: str) -> float:
     return float(np.sum(counts * (counts - 1)) / (n * (n - 1)))
 
 
-def log_likelihood_english(text: str) -> float:
+def log_likelihood_german(text: str) -> float:
     """
-    Score how "English-like" a text is using log-likelihood against known frequencies.
+    Score how German-like a text is using log-likelihood against known frequencies.
 
-    A higher (less negative) score means the text looks more like English.
+    A higher (less negative) score means the text looks more like German.
     This is used as the likelihood P(text | setting is correct) in the
     Bayesian decoder.
 
@@ -71,7 +73,7 @@ def log_likelihood_english(text: str) -> float:
         text: Decrypted candidate text (non-alpha characters ignored).
 
     Returns:
-        Sum of log-probabilities for each letter under the English model.
+        Sum of log-probabilities for each letter under the German model.
         Returns a large negative number for empty input.
     """
     text = "".join(c for c in text.upper() if c.isalpha())
@@ -79,7 +81,7 @@ def log_likelihood_english(text: str) -> float:
         return -1e10
     score = 0.0
     for letter in text:
-        freq = ENGLISH_FREQUENCIES.get(letter, 1e-10)
+        freq = GERMAN_FREQUENCIES.get(letter, 1e-10)
         score += math.log(freq)
     return score
 
