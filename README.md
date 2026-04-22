@@ -2,7 +2,7 @@
 
 Mathematics and CS through stories: interactive lessons with visualisations, Jupyter notebooks, and video animations.
 
-Live site: **https://lutchet.netlify.app**
+Live site: **https://lutchet.ai**
 
 ## Getting started
 
